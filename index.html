@@ -85,6 +85,22 @@
 
         .admin-only { display: none !important; }
 
+        .print-header-info { display: none; }
+
+        @media print {
+            @page { size: landscape; margin: 5mm; }
+            html, body { height: auto !important; overflow: visible !important; background: white; }
+            .main-wrapper { height: auto !important; padding: 0; display: block; }
+            .container { height: auto !important; display: block; border: none; box-shadow: none; padding: 0; overflow: visible !important; }
+            .print-header-info { display: block; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; font-size: 0.85rem; }
+            .table-container { height: auto !important; overflow: visible !important; display: block; border: none; }
+            table { min-width: 100% !important; width: 100% !important; table-layout: auto !important; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; }
+            td { border: 1px solid #000 !important; white-space: normal !important; word-wrap: break-word; }
+            .no-print, .btn-col, .btn-lock, .admin-only, #adminStatus { display: none !important; }
+        }
+
         @media (max-width: 600px) {
             .corp-header h1 { font-size: 1rem; padding-right: 70px; text-align: left; }
             .filter-item { min-width: 100%; }
@@ -102,6 +118,13 @@
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="adminStatus">ADMIN</div>
                 <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔓 Login</button>
+            </div>
+        </div>
+
+        <div class="print-header-info">
+            <div style="display:flex; justify-content: space-between;">
+                <b>Report For: <span id="print_range_text">All Records</span></b>
+                <span>Print Date: <span id="print_now_date"></span></span>
             </div>
         </div>
 
@@ -126,7 +149,6 @@
 
         <div class="filter-section no-print">
             <div class="filter-item"><label>BoE Date Search</label><input type="text" id="boeDateFilter" placeholder="Search Date..." onkeyup="applyFilters()"></div>
-            
             <div class="filter-item"><label>Ass. Date From</label><input type="text" id="assFrom" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
             <div class="filter-item"><label>Ass. Date To</label><input type="text" id="assTo" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
             
@@ -174,24 +196,18 @@
     let isAdmin = false;
     const SECRET_PASSWORD = "123";
 
-    // Helper to turn your text "DD-MM-YY" into a real date object
     function parseDateStr(str) {
-        if (!str || str.length < 8) return null;
+        if (!str || str.length < 5) return null;
         const parts = str.split(/[-/]/);
-        if (parts.length < 3) return null;
+        if (parts.length < 2) return null;
         let day = parseInt(parts[0]);
         let month = parts[1];
-        let year = parts[2];
-
-        // Handle text months like "Apr"
+        let year = parts[2] || new Date().getFullYear().toString().substr(-2);
         const months = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
         let monthIdx = parseInt(month) - 1;
         if (isNaN(monthIdx)) monthIdx = months.indexOf(month.toLowerCase());
-
-        // Handle 2-digit years
         let fullYear = parseInt(year);
         if (fullYear < 100) fullYear += 2000;
-
         const d = new Date(fullYear, monthIdx, day);
         return isNaN(d.getTime()) ? null : d;
     }
@@ -216,7 +232,6 @@
 
     function enableAdminUI() {
         document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
-        document.getElementById('entryWrapper').style.display = "none";
     }
 
     function disableAdminUI() {
@@ -250,11 +265,9 @@
             const itemAssDate = parseDateStr(item.ass_date);
             const isPending = !item.ass_date || item.ass_date.trim() === "";
 
-            // RANGE LOGIC
             let inRange = true;
             if (fromDate && itemAssDate) { if (itemAssDate < fromDate) inRange = false; }
             if (toDate && itemAssDate) { if (itemAssDate > toDate) inRange = false; }
-            // If user typed a range but item has no date, hide it from range results
             if ((fromDate || toDate) && !itemAssDate) inRange = false;
 
             if (mode === 'completed') return matchesSearch && matchesBoE && inRange && !isPending;
@@ -340,7 +353,26 @@
         if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
     }
     
-    function preparePrint() { window.print(); }
+    // UPDATED PREPARE PRINT FUNCTION
+    function preparePrint() { 
+        const from = document.getElementById('assFrom').value;
+        const to = document.getElementById('assTo').value;
+        const mode = document.getElementById('viewMode').value;
+        
+        let headerText = "";
+        if (from && to) headerText = ` ${from} to ${to}`;
+        else if (from) headerText = `Records from ${from}`;
+        else if (to) headerText = `Records up to ${to}`;
+        else headerText = "Full Database Report";
+
+        if (mode === 'combined') headerText += " (+ Pending List)";
+        if (mode === 'pending') headerText = "Pending Assessment List";
+
+        document.getElementById('print_range_text').innerText = headerText;
+        document.getElementById('print_now_date').innerText = new Date().toLocaleDateString('en-GB');
+        window.print(); 
+    }
+
     function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
