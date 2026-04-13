@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chevron Lines - Data Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --glass: rgba(255, 255, 255, 0.9);
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --border: rgba(255, 255, 255, 0.4);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { 
+            height: 100vh; margin: 0; padding: 0; overflow: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #cbd5e1 0%, #f8fafc 100%);
+        }
+
+        .main-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 12px; }
+
+        .container {
+            display: flex; flex-direction: column; flex: 1;
+            background: var(--glass); backdrop-filter: blur(12px);
+            border-radius: 12px; border: 1px solid var(--border);
+            padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .corp-header { position: relative; text-align: center; margin-bottom: 10px; }
+        .corp-header h1 { margin: 0; font-size: 1.4rem; color: var(--primary); font-weight: 800; }
+        .corp-header p { margin: 1px 0; font-size: 0.75rem; color: #475569; }
+
+        .top-counter {
+            position: absolute; right: 0; top: 0;
+            text-align: right; font-weight: 700; font-size: 0.85rem;
+            color: var(--accent); border-bottom: 2px solid var(--accent);
+        }
+
+        .entry-section {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .entry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px; align-items: flex-end;
+        }
+
+        .filter-section {
+            display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;
+            padding: 10px; background: rgba(37, 99, 235, 0.05); border-radius: 8px;
+        }
+
+        label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 3px; }
+        input, select { 
+            width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; 
+            border-radius: 5px; font-size: 0.75rem; background: white;
+        }
+
+        .table-container { 
+            flex: 1; overflow-y: auto; background: white; 
+            border-radius: 8px; border: 1px solid #e2e8f0;
+        }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { 
+            position: sticky; top: 0; background: #f1f5f9; padding: 10px; 
+            text-align: left; font-size: 0.65rem; color: #334155; 
+            z-index: 10; border-bottom: 2px solid #cbd5e1; 
+        }
+        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .col-sl { width: 35px; }
+        .col-job { width: 60px; }
+        .col-imp { width: 18%; } 
+        .col-desc { width: 18%; } 
+        .col-num { width: 85px; } 
+        .col-date { width: 80px; }
+        .col-sts { width: 80px; }
+        .col-duty { width: 90px; }
+        .col-act { width: 100px; }
+
+        .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
+        .YELLOW { background: #fef3c7; color: #92400e; }
+        .RED { background: #fee2e2; color: #b91c1c; }
+
+        .btn { border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 700; font-size: 0.7rem; transition: 0.2s; }
+        .btn-add { background: var(--primary); color: white; width: 100%; }
+        .btn-print { background: var(--accent); color: white; }
+        .btn-edit { background: #64748b; color: white; }
+
+        .print-only { display: none; }
+
+        @media print {
+            @page { size: landscape; margin: 10mm; }
+            body, .main-wrapper { height: auto; overflow: visible; background: white; padding: 0; }
+            .entry-section, .filter-section, .btn-col, .no-print { display: none !important; }
+            .container { box-shadow: none; border: none; padding: 0; }
+            .print-only { display: block !important; margin-bottom: 15px; font-size: 0.8rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
+            table { border: 1px solid #000; table-layout: auto; }
+            th, td { border: 1px solid #000 !important; white-space: normal !important; padding: 5px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <div class="container">
+        <div class="corp-header">
+            <h1>Chevron Lines (C&F) Limited</h1>
+            <p>Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
+            <div class="top-counter no-print">Records: <span id="main_count">0</span></div>
+        </div>
+
+        <div class="print-only">
+            <b>Print Date:</b> <span id="p_date"></span> | <b>Filtered By:</b> <span id="p_filter">None</span>
+        </div>
+
+        <div class="entry-section no-print">
+            <div class="entry-grid">
+                <div><label>Job</label><input type="text" id="job_in"></div>
+                <div style="grid-column: span 2;"><label>Importer Name</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
+                <div style="grid-column: span 2;"><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
+                <div><label>BL No</label><input type="text" id="bl_in"></div>
+                <div><label>LC No</label><input type="text" id="lc_in"></div>
+                <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
+                <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM"></div>
+                <div><label>Duty</label><input type="text" id="duty_in" placeholder="Amount"></div>
+                <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
+                <div style="min-width: 100px;"><button class="btn btn-add" onclick="addData()">Save Entry</button></div>
+            </div>
+        </div>
+
+        <div class="filter-section no-print">
+            <div style="flex: 1;"><label>Filter BoE Date</label><input type="text" id="boeDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
+            <div style="flex: 1;"><label>Filter Ass. Date</label><input type="text" id="assDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
+            <div style="flex: 1.5;"><label>Workflow View</label><select id="viewMode" onchange="applyFilters()">
+                <option value="pending" selected>Non-Assessed Records</option>
+                <option value="all">Full Database</option>
+                <option value="completed">Assessed Records</option>
+                <option value="combined">Date View + Pendings</option>
+            </select></div>
+            <div style="flex: 2;"><label>Global Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
+            <button class="btn btn-print" onclick="preparePrint()">Print Report</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-sl">SL</th>
+                        <th class="col-job">Job</th>
+                        <th class="col-imp">Importer Name</th>
+                        <th class="col-desc">Description</th>
+                        <th class="col-num">BL No</th>
+                        <th class="col-num">LC No</th>
+                        <th class="col-num">BoE No</th>
+                        <th class="col-date">BoE Date</th>
+                        <th class="col-duty">Duty</th>
+                        <th class="col-sts">Status</th>
+                        <th class="col-date">Ass. Date</th>
+                        <th class="col-act btn-col">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://vhlzalgatarrrobjympc.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobHphbGdhdGFycnJvYmp5bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODI3ODksImV4cCI6MjA5MTU1ODc4OX0.DngGAcPst8pUwcz4NpuXEYdEk70BQoqOjXS78bAv8FU';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let assessments = [];
+    let editId = null;
+
+    async function fetchData() {
+        const { data, error } = await _supabase.from('assessments').select('*').order('id', { ascending: true });
+        if (!error) { assessments = data; updateSuggestions(); applyFilters(); }
+    }
+
+    function updateSuggestions() {
+        const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
+        const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
+        document.getElementById('imp_suggestions').innerHTML = imps.map(i => `<option value="${i}">`).join('');
+        document.getElementById('desc_suggestions').innerHTML = descs.map(i => `<option value="${i}">`).join('');
+    }
+
+    function applyFilters() {
+        const boeD = document.getElementById('boeDateFilter').value.trim().toLowerCase();
+        const assD = document.getElementById('assDateFilter').value.trim().toLowerCase();
+        const mode = document.getElementById('viewMode').value;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+
+        const filtered = assessments.filter(item => {
+            const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
+            const matchesBoE = boeD === "" || (item.boe_date && item.boe_date.toLowerCase().includes(boeD));
+            const matchesAss = assD === "" || (item.ass_date && item.ass_date.toLowerCase().includes(assD));
+            const isPending = !item.ass_date || item.ass_date.trim() === "";
+
+            if (mode === 'completed') return matchesSearch && matchesBoE && matchesAss && !isPending;
+            if (mode === 'pending') return matchesSearch && matchesBoE && isPending;
+            if (mode === 'combined') return matchesSearch && (matchesAss || isPending);
+            return matchesSearch && matchesBoE && matchesAss;
+        });
+
+        document.getElementById('main_count').innerText = filtered.length;
+        let filterTxt = mode === 'pending' ? "Pending List" : "Full Report";
+        if(boeD) filterTxt = `BoE Date: ${boeD.toUpperCase()}`;
+        document.getElementById('p_filter').innerText = filterTxt;
+
+        renderTable(filtered);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            if (editId === item.id) {
+                tr.innerHTML = `
+                    <td>${index+1}</td>
+                    <td><input value="${item.job || ''}" id="e_job"></td>
+                    <td><input value="${item.importer || ''}" id="e_imp"></td>
+                    <td><input value="${item.description || ''}" id="e_desc"></td>
+                    <td><input value="${item.bl_no || ''}" id="e_bl"></td>
+                    <td><input value="${item.lc_no || ''}" id="e_lc"></td>
+                    <td><input value="${item.boe_no || ''}" id="e_boe_n"></td>
+                    <td><input value="${item.boe_date || ''}" id="e_boe_d"></td>
+                    <td><input value="${item.duty || ''}" id="e_duty"></td>
+                    <td><select id="e_ry"><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
+                    <td><input value="${item.ass_date || ''}" id="e_ass" placeholder="DD-MMM"></td>
+                    <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td>${index+1}</td><td>${item.job || ''}</td>
+                    <td>${item.importer || ''}</td><td>${item.description || ''}</td>
+                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td>
+                    <td style="font-weight:700">${item.boe_date || ''}</td>
+                    <td>${item.duty || ''}</td>
+                    <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
+                    <td style="font-weight:700; color:var(--accent)">${item.ass_date || '-'}</td>
+                    <td class="btn-col">
+                        <button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>
+                        <button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>
+                    </td>
+                `;
+            }
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function addData() {
+        const entry = {
+            job: document.getElementById('job_in').value,
+            importer: document.getElementById('imp_in').value,
+            description: document.getElementById('desc_in').value,
+            bl_no: document.getElementById('bl_in').value,
+            lc_no: document.getElementById('lc_in').value,
+            boe_no: document.getElementById('boe_n_in').value,
+            boe_date: document.getElementById('boe_d_in').value,
+            duty: document.getElementById('duty_in').value,
+            ry_status: document.getElementById('ry_in').value,
+            ass_date: null
+        };
+        await _supabase.from('assessments').insert([entry]);
+        fetchData(); clearInputs();
+    }
+
+    function startEdit(id) { editId = id; applyFilters(); }
+    async function saveEdit(id) {
+        const updated = {
+            job: document.getElementById('e_job').value,
+            importer: document.getElementById('e_imp').value,
+            description: document.getElementById('e_desc').value,
+            bl_no: document.getElementById('e_bl').value,
+            lc_no: document.getElementById('e_lc').value,
+            boe_no: document.getElementById('e_boe_n').value,
+            boe_date: document.getElementById('e_boe_d').value,
+            duty: document.getElementById('e_duty').value,
+            ry_status: document.getElementById('e_ry').value,
+            ass_date: document.getElementById('e_ass').value || null
+        };
+        await _supabase.from('assessments').update(updated).eq('id', id);
+        editId = null; fetchData();
+    }
+
+    function preparePrint() {
+        document.getElementById('p_date').innerText = new Date().toLocaleString();
+        window.print();
+    }
+
+    async function deleteRecord(id) { if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } }
+    function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
+    fetchData();
+</script>
+</body>
+</html>
