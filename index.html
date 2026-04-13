@@ -40,10 +40,12 @@
             color: var(--accent); border-bottom: 2px solid var(--accent);
         }
 
+        /* Hidden Entry Section */
+        #entryWrapper { display: none; margin-bottom: 12px; }
+
         .entry-section {
-            background: rgba(255, 255, 255, 0.5);
-            padding: 12px; border-radius: 8px; border: 1px solid var(--border);
-            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 12px; border-radius: 8px; border: 2px solid var(--accent);
         }
         .entry-grid {
             display: grid;
@@ -74,14 +76,15 @@
         }
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+        /* Column Widths */
         .col-sl { width: 35px; }
         .col-job { width: 60px; }
         .col-imp { width: 18%; } 
         .col-desc { width: 18%; } 
         .col-num { width: 85px; } 
         .col-date { width: 80px; }
-        .col-sts { width: 80px; }
         .col-duty { width: 90px; }
+        .col-sts { width: 80px; }
         .col-act { width: 100px; }
 
         .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
@@ -89,7 +92,8 @@
         .RED { background: #fee2e2; color: #b91c1c; }
 
         .btn { border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 700; font-size: 0.7rem; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; width: 100%; }
+        .btn-toggle { background: #0f172a; color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+        .btn-add { background: var(--accent); color: white; width: 100%; }
         .btn-print { background: var(--accent); color: white; }
         .btn-edit { background: #64748b; color: white; }
 
@@ -98,7 +102,7 @@
         @media print {
             @page { size: landscape; margin: 10mm; }
             body, .main-wrapper { height: auto; overflow: visible; background: white; padding: 0; }
-            .entry-section, .filter-section, .btn-col, .no-print { display: none !important; }
+            .entry-section, .filter-section, .btn-col, .no-print, .btn-toggle { display: none !important; }
             .container { box-shadow: none; border: none; padding: 0; }
             .print-only { display: block !important; margin-bottom: 15px; font-size: 0.8rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
             table { border: 1px solid #000; table-layout: auto; }
@@ -120,18 +124,22 @@
             <b>Print Date:</b> <span id="p_date"></span> | <b>Filtered By:</b> <span id="p_filter">None</span>
         </div>
 
-        <div class="entry-section no-print">
-            <div class="entry-grid">
-                <div><label>Job</label><input type="text" id="job_in"></div>
-                <div style="grid-column: span 2;"><label>Importer Name</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
-                <div style="grid-column: span 2;"><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
-                <div><label>BL No</label><input type="text" id="bl_in"></div>
-                <div><label>LC No</label><input type="text" id="lc_in"></div>
-                <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
-                <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM"></div>
-                <div><label>Duty</label><input type="text" id="duty_in" placeholder="Amount"></div>
-                <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
-                <div style="min-width: 100px;"><button class="btn btn-add" onclick="addData()">Save Entry</button></div>
+        <button class="btn btn-toggle no-print" onclick="toggleEntry()">+ New Data Entry</button>
+
+        <div id="entryWrapper" class="no-print">
+            <div class="entry-section">
+                <div class="entry-grid">
+                    <div><label>Job</label><input type="text" id="job_in"></div>
+                    <div style="grid-column: span 2;"><label>Importer Name</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
+                    <div style="grid-column: span 2;"><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
+                    <div><label>BL No</label><input type="text" id="bl_in"></div>
+                    <div><label>LC No</label><input type="text" id="lc_in"></div>
+                    <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
+                    <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM"></div>
+                    <div><label>Duty</label><input type="text" id="duty_in"></div>
+                    <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
+                    <div style="min-width: 100px;"><button class="btn btn-add" onclick="addData()">Save Entry</button></div>
+                </div>
             </div>
         </div>
 
@@ -173,12 +181,17 @@
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://vhlzalgatarrrobjympc.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobHphbGdhdGFycnJvYmp5bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODI3ODksImV4cCI6MjA5MTU1ODc4OX0.DngGAcPst8pUwcz4NpuXEYdEk70BQoqOjXS78bAv8FU';
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseUrl = 'https://vhlzalgatarrrobjympc.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobHphbGdhdGFycnJvYmp5bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODI3ODksImV4cCI6MjA5MTU1ODc4OX0.DngGAcPst8pUwcz4NpuXEYdEk70BQoqOjXS78bAv8FU';
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     let assessments = [];
     let editId = null;
+
+    function toggleEntry() {
+        const wrapper = document.getElementById('entryWrapper');
+        wrapper.style.display = (wrapper.style.display === 'block') ? 'none' : 'block';
+    }
 
     async function fetchData() {
         const { data, error } = await _supabase.from('assessments').select('*').order('id', { ascending: true });
@@ -211,10 +224,6 @@
         });
 
         document.getElementById('main_count').innerText = filtered.length;
-        let filterTxt = mode === 'pending' ? "Pending List" : "Full Report";
-        if(boeD) filterTxt = `BoE Date: ${boeD.toUpperCase()}`;
-        document.getElementById('p_filter').innerText = filterTxt;
-
         renderTable(filtered);
     }
 
@@ -235,7 +244,7 @@
                     <td><input value="${item.boe_date || ''}" id="e_boe_d"></td>
                     <td><input value="${item.duty || ''}" id="e_duty"></td>
                     <td><select id="e_ry"><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
-                    <td><input value="${item.ass_date || ''}" id="e_ass" placeholder="DD-MMM"></td>
+                    <td><input value="${item.ass_date || ''}" id="e_ass"></td>
                     <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>
                 `;
             } else {
@@ -270,11 +279,13 @@
             ry_status: document.getElementById('ry_in').value,
             ass_date: null
         };
-        await _supabase.from('assessments').insert([entry]);
-        fetchData(); clearInputs();
+        const { error } = await _supabase.from('assessments').insert([entry]);
+        if (error) alert("Save Error: " + error.message);
+        fetchData(); clearInputs(); toggleEntry(); // Close after save
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
+
     async function saveEdit(id) {
         const updated = {
             job: document.getElementById('e_job').value,
