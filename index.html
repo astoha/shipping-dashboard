@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chevron Lines - Data Manager</title>
+    <title>Chevron Lines - Secure Manager</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -11,15 +11,17 @@
             --primary: #0f172a;
             --accent: #2563eb;
             --border: rgba(255, 255, 255, 0.4);
+            --admin-color: #dc2626;
         }
 
         * { box-sizing: border-box; }
         html, body { 
-            height: 100vh; margin: 0; padding: 0; overflow: hidden;
+            height: 100vh; margin: 0; padding: 0;
             font-family: 'Inter', system-ui, sans-serif;
             background: linear-gradient(135deg, #cbd5e1 0%, #f8fafc 100%);
         }
 
+        /* Responsive Wrapper */
         .main-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 12px; }
 
         .container {
@@ -31,16 +33,21 @@
         }
 
         .corp-header { position: relative; text-align: center; margin-bottom: 10px; }
-        .corp-header h1 { margin: 0; font-size: 1.4rem; color: var(--primary); font-weight: 800; }
-        .corp-header p { margin: 1px 0; font-size: 0.75rem; color: #475569; }
+        .corp-header h1 { margin: 0; font-size: 1.2rem; color: var(--primary); font-weight: 800; }
+        .corp-header p { margin: 1px 0; font-size: 0.7rem; color: #475569; }
+
+        .top-right-tools {
+            position: absolute; right: 0; top: 0;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+        }
 
         .top-counter {
-            position: absolute; right: 0; top: 0;
-            text-align: right; font-weight: 700; font-size: 0.85rem;
+            font-weight: 700; font-size: 0.8rem;
             color: var(--accent); border-bottom: 2px solid var(--accent);
         }
 
-        /* Hidden Entry Section */
+        #adminStatus { font-size: 0.6rem; font-weight: 800; color: var(--admin-color); display: none; }
+
         #entryWrapper { display: none; margin-bottom: 12px; }
 
         .entry-section {
@@ -49,64 +56,76 @@
         }
         .entry-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 8px; align-items: flex-end;
         }
 
         .filter-section {
-            display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end;
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: flex-end;
             padding: 10px; background: rgba(37, 99, 235, 0.05); border-radius: 8px;
         }
+        .filter-item { flex: 1; min-width: 120px; }
 
         label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 3px; }
         input, select { 
-            width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; 
+            width: 100%; padding: 8px; border: 1px solid #cbd5e1; 
             border-radius: 5px; font-size: 0.75rem; background: white;
         }
 
+        /* MOBILE FIX: Enable horizontal scroll for table */
         .table-container { 
-            flex: 1; overflow-y: auto; background: white; 
+            flex: 1; overflow: auto; background: white; 
             border-radius: 8px; border: 1px solid #e2e8f0;
         }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; } /* Min-width ensures columns don't vanish */
+        
         th { 
             position: sticky; top: 0; background: #f1f5f9; padding: 10px; 
             text-align: left; font-size: 0.65rem; color: #334155; 
             z-index: 10; border-bottom: 2px solid #cbd5e1; 
         }
-        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
 
-        /* Column Widths */
-        .col-sl { width: 35px; }
-        .col-job { width: 60px; }
-        .col-imp { width: 18%; } 
-        .col-desc { width: 18%; } 
-        .col-num { width: 85px; } 
-        .col-date { width: 80px; }
+        /* Column widths */
+        .col-sl { width: 40px; }
+        .col-job { width: 70px; }
+        .col-imp { width: 180px; } 
+        .col-desc { width: 180px; } 
+        .col-num { width: 100px; } 
+        .col-date { width: 90px; }
         .col-duty { width: 90px; }
-        .col-sts { width: 80px; }
-        .col-act { width: 100px; }
+        .col-sts { width: 85px; }
+        .col-act { width: 110px; }
 
         .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
         .YELLOW { background: #fef3c7; color: #92400e; }
         .RED { background: #fee2e2; color: #b91c1c; }
 
-        .btn { border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 700; font-size: 0.7rem; transition: 0.2s; }
-        .btn-toggle { background: #0f172a; color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+        .btn { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 700; font-size: 0.7rem; transition: 0.2s; }
+        .btn-toggle { background: #0f172a; color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); display: none; }
+        .btn-lock { background: #cbd5e1; color: #0f172a; padding: 5px 10px; font-size: 0.65rem; }
         .btn-add { background: var(--accent); color: white; width: 100%; }
         .btn-print { background: var(--accent); color: white; }
         .btn-edit { background: #64748b; color: white; }
 
-        .print-only { display: none; }
+        .admin-only { display: none !important; }
 
         @media print {
             @page { size: landscape; margin: 10mm; }
             body, .main-wrapper { height: auto; overflow: visible; background: white; padding: 0; }
-            .entry-section, .filter-section, .btn-col, .no-print, .btn-toggle { display: none !important; }
+            .entry-section, .filter-section, .btn-col, .no-print, .btn-toggle, .btn-lock { display: none !important; }
             .container { box-shadow: none; border: none; padding: 0; }
             .print-only { display: block !important; margin-bottom: 15px; font-size: 0.8rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
-            table { border: 1px solid #000; table-layout: auto; }
+            table { border: 1px solid #000; min-width: 100%; table-layout: auto; }
             th, td { border: 1px solid #000 !important; white-space: normal !important; padding: 5px !important; }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .main-wrapper { padding: 6px; }
+            .corp-header h1 { font-size: 1rem; padding-right: 70px; text-align: left; }
+            .corp-header p { text-align: left; }
+            .filter-item { min-width: 100%; }
         }
     </style>
 </head>
@@ -116,44 +135,48 @@
     <div class="container">
         <div class="corp-header">
             <h1>Chevron Lines (C&F) Limited</h1>
-            <p>Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
-            <div class="top-counter no-print">Records: <span id="main_count">0</span></div>
+            <p>Agrabad C/A, Chittagong.</p>
+            <div class="top-right-tools no-print">
+                <div class="top-counter">R: <span id="main_count">0</span></div>
+                <div id="adminStatus">ADMIN</div>
+                <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔓 Login</button>
+            </div>
         </div>
 
         <div class="print-only">
             <b>Print Date:</b> <span id="p_date"></span> | <b>Filtered By:</b> <span id="p_filter">None</span>
         </div>
 
-        <button class="btn btn-toggle no-print" onclick="toggleEntry()">+ New Data Entry</button>
+        <button class="btn btn-toggle no-print admin-only" id="newEntryBtn" onclick="toggleEntry()">+ New Data Entry</button>
 
-        <div id="entryWrapper" class="no-print">
+        <div id="entryWrapper" class="no-print admin-only">
             <div class="entry-section">
                 <div class="entry-grid">
                     <div><label>Job</label><input type="text" id="job_in"></div>
-                    <div style="grid-column: span 2;"><label>Importer Name</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
-                    <div style="grid-column: span 2;"><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
+                    <div><label>Importer</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
+                    <div><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
                     <div><label>BL No</label><input type="text" id="bl_in"></div>
                     <div><label>LC No</label><input type="text" id="lc_in"></div>
                     <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
                     <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM"></div>
                     <div><label>Duty</label><input type="text" id="duty_in"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
-                    <div style="min-width: 100px;"><button class="btn btn-add" onclick="addData()">Save Entry</button></div>
+                    <div><button class="btn btn-add" onclick="addData()">Save</button></div>
                 </div>
             </div>
         </div>
 
         <div class="filter-section no-print">
-            <div style="flex: 1;"><label>Filter BoE Date</label><input type="text" id="boeDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
-            <div style="flex: 1;"><label>Filter Ass. Date</label><input type="text" id="assDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
-            <div style="flex: 1.5;"><label>Workflow View</label><select id="viewMode" onchange="applyFilters()">
-                <option value="pending" selected>Non-Assessed Records</option>
+            <div class="filter-item"><label>BoE Date</label><input type="text" id="boeDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
+            <div class="filter-item"><label>Ass. Date</label><input type="text" id="assDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
+            <div class="filter-item" style="flex: 1.5;"><label>View</label><select id="viewMode" onchange="applyFilters()">
+                <option value="pending" selected>Non-Assessed</option>
                 <option value="all">Full Database</option>
-                <option value="completed">Assessed Records</option>
+                <option value="completed">Assessed</option>
                 <option value="combined">Date View + Pendings</option>
             </select></div>
-            <div style="flex: 2;"><label>Global Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
-            <button class="btn btn-print" onclick="preparePrint()">Print Report</button>
+            <div class="filter-item" style="flex: 2;"><label>Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
+            <button class="btn btn-print" onclick="preparePrint()">Print</button>
         </div>
 
         <div class="table-container">
@@ -187,22 +210,49 @@
 
     let assessments = [];
     let editId = null;
+    let isAdmin = false;
+
+    const SECRET_PASSWORD = "123";
+
+    function handleSecurity() {
+        if (!isAdmin) {
+            const pass = prompt("Enter Admin Password:");
+            if (pass === SECRET_PASSWORD) {
+                isAdmin = true;
+                document.getElementById('lockBtn').innerText = "🔒 Logout";
+                document.getElementById('adminStatus').style.display = "block";
+                enableAdminUI();
+            } else { alert("Wrong password!"); }
+        } else {
+            isAdmin = false;
+            document.getElementById('lockBtn').innerText = "🔓 Login";
+            document.getElementById('adminStatus').style.display = "none";
+            disableAdminUI();
+        }
+        applyFilters();
+    }
+
+    function enableAdminUI() {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
+        document.getElementById('entryWrapper').style.display = "none";
+    }
+
+    function disableAdminUI() {
+        document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'none', 'important'));
+    }
 
     function toggleEntry() {
         const wrapper = document.getElementById('entryWrapper');
-        wrapper.style.display = (wrapper.style.display === 'block') ? 'none' : 'block';
+        if (wrapper.style.display === "none" || wrapper.style.display === "") {
+            wrapper.style.setProperty('display', 'block', 'important');
+        } else {
+            wrapper.style.setProperty('display', 'none', 'important');
+        }
     }
 
     async function fetchData() {
         const { data, error } = await _supabase.from('assessments').select('*').order('id', { ascending: true });
         if (!error) { assessments = data; updateSuggestions(); applyFilters(); }
-    }
-
-    function updateSuggestions() {
-        const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
-        const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
-        document.getElementById('imp_suggestions').innerHTML = imps.map(i => `<option value="${i}">`).join('');
-        document.getElementById('desc_suggestions').innerHTML = descs.map(i => `<option value="${i}">`).join('');
     }
 
     function applyFilters() {
@@ -250,15 +300,18 @@
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td><td>${item.job || ''}</td>
-                    <td>${item.importer || ''}</td><td>${item.description || ''}</td>
+                    <td style="white-space:normal; min-width:180px">${item.importer || ''}</td>
+                    <td style="white-space:normal; min-width:180px">${item.description || ''}</td>
                     <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td>
                     <td style="font-weight:700">${item.boe_date || ''}</td>
                     <td>${item.duty || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
                     <td style="font-weight:700; color:var(--accent)">${item.ass_date || '-'}</td>
                     <td class="btn-col">
-                        <button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>
-                        <button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>
+                        ${isAdmin ? `
+                            <button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>
+                            <button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>
+                        ` : '<span style="color:#94a3b8; font-size:0.6rem">VIEW ONLY</span>'}
                     </td>
                 `;
             }
@@ -267,49 +320,46 @@
     }
 
     async function addData() {
+        if(!isAdmin) return;
         const entry = {
-            job: document.getElementById('job_in').value,
-            importer: document.getElementById('imp_in').value,
-            description: document.getElementById('desc_in').value,
-            bl_no: document.getElementById('bl_in').value,
-            lc_no: document.getElementById('lc_in').value,
-            boe_no: document.getElementById('boe_n_in').value,
-            boe_date: document.getElementById('boe_d_in').value,
-            duty: document.getElementById('duty_in').value,
-            ry_status: document.getElementById('ry_in').value,
-            ass_date: null
+            job: document.getElementById('job_in').value, importer: document.getElementById('imp_in').value,
+            description: document.getElementById('desc_in').value, bl_no: document.getElementById('bl_in').value,
+            lc_no: document.getElementById('lc_in').value, boe_no: document.getElementById('boe_n_in').value,
+            boe_date: document.getElementById('boe_d_in').value, duty: document.getElementById('duty_in').value,
+            ry_status: document.getElementById('ry_in').value, ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
-        if (error) alert("Save Error: " + error.message);
-        fetchData(); clearInputs(); toggleEntry(); // Close after save
+        if (!error) { fetchData(); clearInputs(); toggleEntry(); }
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
 
     async function saveEdit(id) {
+        if(!isAdmin) return;
         const updated = {
-            job: document.getElementById('e_job').value,
-            importer: document.getElementById('e_imp').value,
-            description: document.getElementById('e_desc').value,
-            bl_no: document.getElementById('e_bl').value,
-            lc_no: document.getElementById('e_lc').value,
-            boe_no: document.getElementById('e_boe_n').value,
-            boe_date: document.getElementById('e_boe_d').value,
-            duty: document.getElementById('e_duty').value,
-            ry_status: document.getElementById('e_ry').value,
-            ass_date: document.getElementById('e_ass').value || null
+            job: document.getElementById('e_job').value, importer: document.getElementById('e_imp').value,
+            description: document.getElementById('e_desc').value, bl_no: document.getElementById('e_bl').value,
+            lc_no: document.getElementById('e_lc').value, boe_no: document.getElementById('e_boe_n').value,
+            boe_date: document.getElementById('e_boe_d').value, duty: document.getElementById('e_duty').value,
+            ry_status: document.getElementById('e_ry').value, ass_date: document.getElementById('e_ass').value || null
         };
-        await _supabase.from('assessments').update(updated).eq('id', id);
-        editId = null; fetchData();
+        const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
+        if (!error) { editId = null; await fetchData(); }
     }
 
-    function preparePrint() {
-        document.getElementById('p_date').innerText = new Date().toLocaleString();
-        window.print();
+    async function deleteRecord(id) { 
+        if(!isAdmin) return;
+        if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
     }
-
-    async function deleteRecord(id) { if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } }
+    
+    function preparePrint() { document.getElementById('p_date').innerText = new Date().toLocaleString(); window.print(); }
     function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
+    function updateSuggestions() {
+        const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
+        const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
+        document.getElementById('imp_suggestions').innerHTML = imps.map(i => `<option value="${i}">`).join('');
+        document.getElementById('desc_suggestions').innerHTML = descs.map(i => `<option value="${i}">`).join('');
+    }
     fetchData();
 </script>
 </body>
