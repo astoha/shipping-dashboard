@@ -21,7 +21,6 @@
             background: linear-gradient(135deg, #cbd5e1 0%, #f8fafc 100%);
         }
 
-        /* Responsive Wrapper */
         .main-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 12px; }
 
         .container {
@@ -41,52 +40,28 @@
             display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
         }
 
-        .top-counter {
-            font-weight: 700; font-size: 0.8rem;
-            color: var(--accent); border-bottom: 2px solid var(--accent);
-        }
-
+        .top-counter { font-weight: 700; font-size: 0.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); }
         #adminStatus { font-size: 0.6rem; font-weight: 800; color: var(--admin-color); display: none; }
 
         #entryWrapper { display: none; margin-bottom: 12px; }
 
-        .entry-section {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 12px; border-radius: 8px; border: 2px solid var(--accent);
-        }
-        .entry-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px; align-items: flex-end;
-        }
+        .entry-section { background: rgba(255, 255, 255, 0.8); padding: 12px; border-radius: 8px; border: 2px solid var(--accent); }
+        .entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; align-items: flex-end; }
 
         .filter-section {
             display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: flex-end;
             padding: 10px; background: rgba(37, 99, 235, 0.05); border-radius: 8px;
         }
-        .filter-item { flex: 1; min-width: 120px; }
+        .filter-item { flex: 1; min-width: 110px; }
 
         label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 3px; }
-        input, select { 
-            width: 100%; padding: 8px; border: 1px solid #cbd5e1; 
-            border-radius: 5px; font-size: 0.75rem; background: white;
-        }
+        input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.75rem; background: white; }
 
-        /* MOBILE FIX: Enable horizontal scroll for table */
-        .table-container { 
-            flex: 1; overflow: auto; background: white; 
-            border-radius: 8px; border: 1px solid #e2e8f0;
-        }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; } /* Min-width ensures columns don't vanish */
-        
-        th { 
-            position: sticky; top: 0; background: #f1f5f9; padding: 10px; 
-            text-align: left; font-size: 0.65rem; color: #334155; 
-            z-index: 10; border-bottom: 2px solid #cbd5e1; 
-        }
+        .table-container { flex: 1; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th { position: sticky; top: 0; background: #f1f5f9; padding: 10px; text-align: left; font-size: 0.65rem; color: #334155; z-index: 10; border-bottom: 2px solid #cbd5e1; }
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
 
-        /* Column widths */
         .col-sl { width: 40px; }
         .col-job { width: 70px; }
         .col-imp { width: 180px; } 
@@ -110,21 +85,8 @@
 
         .admin-only { display: none !important; }
 
-        @media print {
-            @page { size: landscape; margin: 10mm; }
-            body, .main-wrapper { height: auto; overflow: visible; background: white; padding: 0; }
-            .entry-section, .filter-section, .btn-col, .no-print, .btn-toggle, .btn-lock { display: none !important; }
-            .container { box-shadow: none; border: none; padding: 0; }
-            .print-only { display: block !important; margin-bottom: 15px; font-size: 0.8rem; border-bottom: 1px solid #000; padding-bottom: 5px; }
-            table { border: 1px solid #000; min-width: 100%; table-layout: auto; }
-            th, td { border: 1px solid #000 !important; white-space: normal !important; padding: 5px !important; }
-        }
-
-        /* Mobile Adjustments */
         @media (max-width: 600px) {
-            .main-wrapper { padding: 6px; }
             .corp-header h1 { font-size: 1rem; padding-right: 70px; text-align: left; }
-            .corp-header p { text-align: left; }
             .filter-item { min-width: 100%; }
         }
     </style>
@@ -143,10 +105,6 @@
             </div>
         </div>
 
-        <div class="print-only">
-            <b>Print Date:</b> <span id="p_date"></span> | <b>Filtered By:</b> <span id="p_filter">None</span>
-        </div>
-
         <button class="btn btn-toggle no-print admin-only" id="newEntryBtn" onclick="toggleEntry()">+ New Data Entry</button>
 
         <div id="entryWrapper" class="no-print admin-only">
@@ -158,7 +116,7 @@
                     <div><label>BL No</label><input type="text" id="bl_in"></div>
                     <div><label>LC No</label><input type="text" id="lc_in"></div>
                     <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
-                    <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM"></div>
+                    <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM-YY"></div>
                     <div><label>Duty</label><input type="text" id="duty_in"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
                     <div><button class="btn btn-add" onclick="addData()">Save</button></div>
@@ -167,15 +125,18 @@
         </div>
 
         <div class="filter-section no-print">
-            <div class="filter-item"><label>BoE Date</label><input type="text" id="boeDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
-            <div class="filter-item"><label>Ass. Date</label><input type="text" id="assDateFilter" placeholder="DD-MMM" onkeyup="applyFilters()"></div>
-            <div class="filter-item" style="flex: 1.5;"><label>View</label><select id="viewMode" onchange="applyFilters()">
+            <div class="filter-item"><label>BoE Date Search</label><input type="text" id="boeDateFilter" placeholder="Search Date..." onkeyup="applyFilters()"></div>
+            
+            <div class="filter-item"><label>Ass. Date From</label><input type="text" id="assFrom" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
+            <div class="filter-item"><label>Ass. Date To</label><input type="text" id="assTo" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
+            
+            <div class="filter-item"><label>View</label><select id="viewMode" onchange="applyFilters()">
                 <option value="pending" selected>Non-Assessed</option>
                 <option value="all">Full Database</option>
                 <option value="completed">Assessed</option>
                 <option value="combined">Date View + Pendings</option>
             </select></div>
-            <div class="filter-item" style="flex: 2;"><label>Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
+            <div class="filter-item" style="flex: 2;"><label>Global Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
             <button class="btn btn-print" onclick="preparePrint()">Print</button>
         </div>
 
@@ -211,8 +172,29 @@
     let assessments = [];
     let editId = null;
     let isAdmin = false;
-
     const SECRET_PASSWORD = "123";
+
+    // Helper to turn your text "DD-MM-YY" into a real date object
+    function parseDateStr(str) {
+        if (!str || str.length < 8) return null;
+        const parts = str.split(/[-/]/);
+        if (parts.length < 3) return null;
+        let day = parseInt(parts[0]);
+        let month = parts[1];
+        let year = parts[2];
+
+        // Handle text months like "Apr"
+        const months = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+        let monthIdx = parseInt(month) - 1;
+        if (isNaN(monthIdx)) monthIdx = months.indexOf(month.toLowerCase());
+
+        // Handle 2-digit years
+        let fullYear = parseInt(year);
+        if (fullYear < 100) fullYear += 2000;
+
+        const d = new Date(fullYear, monthIdx, day);
+        return isNaN(d.getTime()) ? null : d;
+    }
 
     function handleSecurity() {
         if (!isAdmin) {
@@ -243,11 +225,7 @@
 
     function toggleEntry() {
         const wrapper = document.getElementById('entryWrapper');
-        if (wrapper.style.display === "none" || wrapper.style.display === "") {
-            wrapper.style.setProperty('display', 'block', 'important');
-        } else {
-            wrapper.style.setProperty('display', 'none', 'important');
-        }
+        wrapper.style.display = (wrapper.style.display === "none" || wrapper.style.display === "") ? "block" : "none";
     }
 
     async function fetchData() {
@@ -257,20 +235,32 @@
 
     function applyFilters() {
         const boeD = document.getElementById('boeDateFilter').value.trim().toLowerCase();
-        const assD = document.getElementById('assDateFilter').value.trim().toLowerCase();
+        const assFromStr = document.getElementById('assFrom').value.trim();
+        const assToStr = document.getElementById('assTo').value.trim();
         const mode = document.getElementById('viewMode').value;
         const search = document.getElementById('searchInput').value.toLowerCase();
+
+        const fromDate = parseDateStr(assFromStr);
+        const toDate = parseDateStr(assToStr);
 
         const filtered = assessments.filter(item => {
             const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
             const matchesBoE = boeD === "" || (item.boe_date && item.boe_date.toLowerCase().includes(boeD));
-            const matchesAss = assD === "" || (item.ass_date && item.ass_date.toLowerCase().includes(assD));
+            
+            const itemAssDate = parseDateStr(item.ass_date);
             const isPending = !item.ass_date || item.ass_date.trim() === "";
 
-            if (mode === 'completed') return matchesSearch && matchesBoE && matchesAss && !isPending;
+            // RANGE LOGIC
+            let inRange = true;
+            if (fromDate && itemAssDate) { if (itemAssDate < fromDate) inRange = false; }
+            if (toDate && itemAssDate) { if (itemAssDate > toDate) inRange = false; }
+            // If user typed a range but item has no date, hide it from range results
+            if ((fromDate || toDate) && !itemAssDate) inRange = false;
+
+            if (mode === 'completed') return matchesSearch && matchesBoE && inRange && !isPending;
             if (mode === 'pending') return matchesSearch && matchesBoE && isPending;
-            if (mode === 'combined') return matchesSearch && (matchesAss || isPending);
-            return matchesSearch && matchesBoE && matchesAss;
+            if (mode === 'combined') return matchesSearch && (inRange || isPending);
+            return matchesSearch && matchesBoE && inRange;
         });
 
         document.getElementById('main_count').innerText = filtered.length;
@@ -295,8 +285,7 @@
                     <td><input value="${item.duty || ''}" id="e_duty"></td>
                     <td><select id="e_ry"><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
                     <td><input value="${item.ass_date || ''}" id="e_ass"></td>
-                    <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>
-                `;
+                    <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td><td>${item.job || ''}</td>
@@ -312,8 +301,7 @@
                             <button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>
                             <button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>
                         ` : '<span style="color:#94a3b8; font-size:0.6rem">VIEW ONLY</span>'}
-                    </td>
-                `;
+                    </td>`;
             }
             tbody.appendChild(tr);
         });
@@ -352,7 +340,7 @@
         if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
     }
     
-    function preparePrint() { document.getElementById('p_date').innerText = new Date().toLocaleString(); window.print(); }
+    function preparePrint() { window.print(); }
     function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
