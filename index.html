@@ -84,7 +84,6 @@
         .btn-edit { background: #64748b; color: white; }
 
         .admin-only { display: none !important; }
-
         .print-header-info { display: none; }
 
         @media print {
@@ -113,7 +112,7 @@
     <div class="container">
         <div class="corp-header">
             <h1>Chevron Lines (C&F) Limited</h1>
-            <p>Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
+            <p>Agrabad C/A, Chittagong.</p>
             <div class="top-right-tools no-print">
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="adminStatus">ADMIN</div>
@@ -139,7 +138,7 @@
                     <div><label>BL No</label><input type="text" id="bl_in"></div>
                     <div><label>LC No</label><input type="text" id="lc_in"></div>
                     <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
-                    <div><label>BoE Date</label><input type="text" id="boe_d_in" placeholder="DD-MMM-YY"></div>
+                    <div><label>BoE Date</label><input type="date" id="boe_d_in"></div>
                     <div><label>Duty</label><input type="text" id="duty_in"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
                     <div><button class="btn btn-add" onclick="addData()">Save</button></div>
@@ -148,9 +147,9 @@
         </div>
 
         <div class="filter-section no-print">
-            <div class="filter-item"><label>BoE Date Search</label><input type="text" id="boeDateFilter" placeholder="Search Date..." onkeyup="applyFilters()"></div>
-            <div class="filter-item"><label>Ass. Date From</label><input type="text" id="assFrom" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
-            <div class="filter-item"><label>Ass. Date To</label><input type="text" id="assTo" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
+            <div class="filter-item"><label>BoE Date Search</label><input type="text" id="boeDateFilter" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
+            <div class="filter-item"><label>Ass. Date From</label><input type="date" id="assFrom" onchange="applyFilters()"></div>
+            <div class="filter-item"><label>Ass. Date To</label><input type="date" id="assTo" onchange="applyFilters()"></div>
             
             <div class="filter-item"><label>View</label><select id="viewMode" onchange="applyFilters()">
                 <option value="pending" selected>Non-Assessed</option>
@@ -196,20 +195,25 @@
     let isAdmin = false;
     const SECRET_PASSWORD = "123";
 
+    // Converts browser date (YYYY-MM-DD) to Database format (DD-MM-YY)
+    function formatToDB(dateVal) {
+        if (!dateVal) return null;
+        const [y, m, d] = dateVal.split('-');
+        return `${d}-${m}-${y.slice(-2)}`;
+    }
+
+    // Converts Database format (DD-MM-YY) to Browser date (YYYY-MM-DD)
+    function formatToInput(dbVal) {
+        if (!dbVal || dbVal === '-') return '';
+        const parts = dbVal.split('-');
+        if (parts.length < 3) return '';
+        return `20${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+
     function parseDateStr(str) {
-        if (!str || str.length < 5) return null;
-        const parts = str.split(/[-/]/);
-        if (parts.length < 2) return null;
-        let day = parseInt(parts[0]);
-        let month = parts[1];
-        let year = parts[2] || new Date().getFullYear().toString().substr(-2);
-        const months = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-        let monthIdx = parseInt(month) - 1;
-        if (isNaN(monthIdx)) monthIdx = months.indexOf(month.toLowerCase());
-        let fullYear = parseInt(year);
-        if (fullYear < 100) fullYear += 2000;
-        const d = new Date(fullYear, monthIdx, day);
-        return isNaN(d.getTime()) ? null : d;
+        if (!str || str.length < 8) return null;
+        const parts = str.split('-');
+        return new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
     }
 
     function handleSecurity() {
@@ -250,20 +254,22 @@
 
     function applyFilters() {
         const boeD = document.getElementById('boeDateFilter').value.trim().toLowerCase();
-        const assFromStr = document.getElementById('assFrom').value.trim();
-        const assToStr = document.getElementById('assTo').value.trim();
+        const fromInput = document.getElementById('assFrom').value;
+        const toInput = document.getElementById('assTo').value;
         const mode = document.getElementById('viewMode').value;
         const search = document.getElementById('searchInput').value.toLowerCase();
 
-        const fromDate = parseDateStr(assFromStr);
-        const toDate = parseDateStr(assToStr);
+        const fromDate = fromInput ? new Date(fromInput) : null;
+        if(fromDate) fromDate.setHours(0,0,0,0);
+        const toDate = toInput ? new Date(toInput) : null;
+        if(toDate) toDate.setHours(23,59,59,999);
 
         const filtered = assessments.filter(item => {
             const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
             const matchesBoE = boeD === "" || (item.boe_date && item.boe_date.toLowerCase().includes(boeD));
             
             const itemAssDate = parseDateStr(item.ass_date);
-            const isPending = !item.ass_date || item.ass_date.trim() === "";
+            const isPending = !item.ass_date || item.ass_date.trim() === "" || item.ass_date === "-";
 
             let inRange = true;
             if (fromDate && itemAssDate) { if (itemAssDate < fromDate) inRange = false; }
@@ -294,10 +300,10 @@
                     <td><input value="${item.bl_no || ''}" id="e_bl"></td>
                     <td><input value="${item.lc_no || ''}" id="e_lc"></td>
                     <td><input value="${item.boe_no || ''}" id="e_boe_n"></td>
-                    <td><input value="${item.boe_date || ''}" id="e_boe_d"></td>
+                    <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d"></td>
                     <td><input value="${item.duty || ''}" id="e_duty"></td>
                     <td><select id="e_ry"><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
-                    <td><input value="${item.ass_date || ''}" id="e_ass"></td>
+                    <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass"></td>
                     <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
             } else {
                 tr.innerHTML = `
@@ -326,7 +332,7 @@
             job: document.getElementById('job_in').value, importer: document.getElementById('imp_in').value,
             description: document.getElementById('desc_in').value, bl_no: document.getElementById('bl_in').value,
             lc_no: document.getElementById('lc_in').value, boe_no: document.getElementById('boe_n_in').value,
-            boe_date: document.getElementById('boe_d_in').value, duty: document.getElementById('duty_in').value,
+            boe_date: formatToDB(document.getElementById('boe_d_in').value), duty: document.getElementById('duty_in').value,
             ry_status: document.getElementById('ry_in').value, ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
@@ -341,8 +347,8 @@
             job: document.getElementById('e_job').value, importer: document.getElementById('e_imp').value,
             description: document.getElementById('e_desc').value, bl_no: document.getElementById('e_bl').value,
             lc_no: document.getElementById('e_lc').value, boe_no: document.getElementById('e_boe_n').value,
-            boe_date: document.getElementById('e_boe_d').value, duty: document.getElementById('e_duty').value,
-            ry_status: document.getElementById('e_ry').value, ass_date: document.getElementById('e_ass').value || null
+            boe_date: formatToDB(document.getElementById('e_boe_d').value), duty: document.getElementById('e_duty').value,
+            ry_status: document.getElementById('e_ry').value, ass_date: formatToDB(document.getElementById('e_ass').value) || null
         };
         const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
         if (!error) { editId = null; await fetchData(); }
@@ -353,14 +359,13 @@
         if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
     }
     
-    // UPDATED PREPARE PRINT FUNCTION
     function preparePrint() { 
         const from = document.getElementById('assFrom').value;
         const to = document.getElementById('assTo').value;
         const mode = document.getElementById('viewMode').value;
         
         let headerText = "";
-        if (from && to) headerText = ` ${from} to ${to}`;
+        if (from && to) headerText = `Records From ${from} to ${to}`;
         else if (from) headerText = `Records from ${from}`;
         else if (to) headerText = `Records up to ${to}`;
         else headerText = "Full Database Report";
@@ -373,7 +378,10 @@
         window.print(); 
     }
 
-    function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
+    function clearInputs() { 
+        document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); 
+    }
+
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
         const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
