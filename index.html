@@ -112,7 +112,7 @@
     <div class="container">
         <div class="corp-header">
             <h1>Chevron Lines (C&F) Limited</h1>
-            <p>Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
+            <p>Agrabad C/A, Chittagong.</p>
             <div class="top-right-tools no-print">
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="adminStatus">ADMIN</div>
@@ -122,7 +122,7 @@
 
         <div class="print-header-info">
             <div style="display:flex; justify-content: space-between;">
-                <b><span id="print_range_text">All Records</span></b>
+                <b>Report For: <span id="print_range_text">All Records</span></b>
                 <span>Print Date: <span id="print_now_date"></span></span>
             </div>
         </div>
@@ -147,7 +147,7 @@
         </div>
 
         <div class="filter-section no-print">
-            <div class="filter-item"><label>BoE Date Search</label><input type="text" id="boeDateFilter" placeholder="DD-MM-YY" onkeyup="applyFilters()"></div>
+            <div class="filter-item"><label>BoE Date Search</label><input type="date" id="boeDateFilter" onchange="applyFilters()"></div>
             <div class="filter-item"><label>Ass. Date From</label><input type="date" id="assFrom" onchange="applyFilters()"></div>
             <div class="filter-item"><label>Ass. Date To</label><input type="date" id="assTo" onchange="applyFilters()"></div>
             
@@ -195,23 +195,20 @@
     let isAdmin = false;
     const SECRET_PASSWORD = "000";
 
-    // Converts browser date (YYYY-MM-DD) to Database format (DD-MM-YY)
     function formatToDB(dateVal) {
         if (!dateVal) return null;
         const [y, m, d] = dateVal.split('-');
         return `${d}-${m}-${y.slice(-2)}`;
     }
 
-    // Converts Database format (DD-MM-YY) to Browser date (YYYY-MM-DD)
     function formatToInput(dbVal) {
-        if (!dbVal || dbVal === '-') return '';
+        if (!dbVal || dbVal === '-' || dbVal.length < 8) return '';
         const parts = dbVal.split('-');
-        if (parts.length < 3) return '';
         return `20${parts[2]}-${parts[1]}-${parts[0]}`;
     }
 
     function parseDateStr(str) {
-        if (!str || str.length < 8) return null;
+        if (!str || str.length < 8 || str === '-') return null;
         const parts = str.split('-');
         return new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
     }
@@ -253,7 +250,8 @@
     }
 
     function applyFilters() {
-        const boeD = document.getElementById('boeDateFilter').value.trim().toLowerCase();
+        const boeInput = document.getElementById('boeDateFilter').value;
+        const boeFormatted = formatToDB(boeInput); // Convert to DB format for matching
         const fromInput = document.getElementById('assFrom').value;
         const toInput = document.getElementById('assTo').value;
         const mode = document.getElementById('viewMode').value;
@@ -266,7 +264,7 @@
 
         const filtered = assessments.filter(item => {
             const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
-            const matchesBoE = boeD === "" || (item.boe_date && item.boe_date.toLowerCase().includes(boeD));
+            const matchesBoE = !boeInput || (item.boe_date === boeFormatted);
             
             const itemAssDate = parseDateStr(item.ass_date);
             const isPending = !item.ass_date || item.ass_date.trim() === "" || item.ass_date === "-";
@@ -329,14 +327,25 @@
     async function addData() {
         if(!isAdmin) return;
         const entry = {
-            job: document.getElementById('job_in').value, importer: document.getElementById('imp_in').value,
-            description: document.getElementById('desc_in').value, bl_no: document.getElementById('bl_in').value,
-            lc_no: document.getElementById('lc_in').value, boe_no: document.getElementById('boe_n_in').value,
-            boe_date: formatToDB(document.getElementById('boe_d_in').value), duty: document.getElementById('duty_in').value,
-            ry_status: document.getElementById('ry_in').value, ass_date: null
+            job: document.getElementById('job_in').value, 
+            importer: document.getElementById('imp_in').value,
+            description: document.getElementById('desc_in').value, 
+            bl_no: document.getElementById('bl_in').value,
+            lc_no: document.getElementById('lc_in').value, 
+            boe_no: document.getElementById('boe_n_in').value,
+            boe_date: formatToDB(document.getElementById('boe_d_in').value), 
+            duty: document.getElementById('duty_in').value,
+            ry_status: document.getElementById('ry_in').value, 
+            ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
-        if (!error) { fetchData(); clearInputs(); toggleEntry(); }
+        if (!error) { 
+            await fetchData(); 
+            clearInputs(); 
+            // Wrapper stays open so you can add more!
+        } else {
+            alert("Error saving: " + error.message);
+        }
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
