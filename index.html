@@ -12,6 +12,7 @@
             --accent: #2563eb;
             --border: rgba(255, 255, 255, 0.4);
             --admin-color: #dc2626;
+            --staff-color: #059669;
         }
 
         * { box-sizing: border-box; }
@@ -41,7 +42,7 @@
         }
 
         .top-counter { font-weight: 700; font-size: 0.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); }
-        #adminStatus { font-size: 0.6rem; font-weight: 800; color: var(--admin-color); display: none; }
+        #roleStatus { font-size: 0.6rem; font-weight: 800; display: none; }
 
         #entryWrapper { display: none; margin-bottom: 12px; }
 
@@ -58,19 +59,19 @@
         input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.75rem; background: white; }
 
         .table-container { flex: 1; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th { position: sticky; top: 0; background: #f1f5f9; padding: 10px; text-align: left; font-size: 0.65rem; color: #334155; z-index: 10; border-bottom: 2px solid #cbd5e1; }
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
 
         .col-sl { width: 40px; }
         .col-job { width: 70px; }
-        .col-imp { width: 180px; } 
-        .col-desc { width: 180px; } 
-        .col-num { width: 100px; } 
+        .col-imp { width: 150px; } 
+        .col-desc { width: 150px; } 
+        .col-num { width: 90px; } 
         .col-date { width: 90px; }
-        .col-duty { width: 90px; }
         .col-sts { width: 85px; }
-        .col-act { width: 110px; }
+        .col-rem { width: 130px; }
+        .col-act { width: 100px; }
 
         .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
         .YELLOW { background: #fef3c7; color: #92400e; }
@@ -93,16 +94,10 @@
             .container { height: auto !important; display: block; border: none; box-shadow: none; padding: 0; overflow: visible !important; }
             .print-header-info { display: block; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; font-size: 0.85rem; }
             .table-container { height: auto !important; overflow: visible !important; display: block; border: none; }
-            table { min-width: 100% !important; width: 100% !important; table-layout: auto !important; page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
+            table { min-width: 100% !important; width: 100% !important; table-layout: auto !important; }
             th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; }
-            td { border: 1px solid #000 !important; white-space: normal !important; word-wrap: break-word; }
-            .no-print, .btn-col, .btn-lock, .admin-only, #adminStatus { display: none !important; }
-        }
-
-        @media (max-width: 600px) {
-            .corp-header h1 { font-size: 1rem; padding-right: 70px; text-align: left; }
-            .filter-item { min-width: 100%; }
+            td { border: 1px solid #000 !important; }
+            .no-print, .btn-col, .btn-lock, .admin-only, #roleStatus { display: none !important; }
         }
     </style>
 </head>
@@ -115,7 +110,7 @@
             <p>Agrabad C/A, Chittagong.</p>
             <div class="top-right-tools no-print">
                 <div class="top-counter">R: <span id="main_count">0</span></div>
-                <div id="adminStatus">ADMIN</div>
+                <div id="roleStatus"></div>
                 <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔓 Login</button>
             </div>
         </div>
@@ -141,6 +136,7 @@
                     <div><label>BoE Date</label><input type="date" id="boe_d_in"></div>
                     <div><label>Duty</label><input type="text" id="duty_in"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
+                    <div><label>Remark</label><input type="text" id="rem_in"></div>
                     <div><button class="btn btn-add" onclick="addData()">Save</button></div>
                 </div>
             </div>
@@ -173,8 +169,8 @@
                         <th class="col-num">LC No</th>
                         <th class="col-num">BoE No</th>
                         <th class="col-date">BoE Date</th>
-                        <th class="col-duty">Duty</th>
                         <th class="col-sts">Status</th>
+                        <th class="col-rem">Remark</th>
                         <th class="col-date">Ass. Date</th>
                         <th class="col-act btn-col">Action</th>
                     </tr>
@@ -192,8 +188,7 @@
 
     let assessments = [];
     let editId = null;
-    let isAdmin = false;
-    const SECRET_PASSWORD = "000";
+    let currentUser = null; // 'admin', 'staff', or null
 
     function formatToDB(dateVal) {
         if (!dateVal) return null;
@@ -214,29 +209,33 @@
     }
 
     function handleSecurity() {
-        if (!isAdmin) {
-            const pass = prompt("Enter Admin Password:");
-            if (pass === SECRET_PASSWORD) {
-                isAdmin = true;
-                document.getElementById('lockBtn').innerText = "🔒 Logout";
-                document.getElementById('adminStatus').style.display = "block";
-                enableAdminUI();
-            } else { alert("Wrong password!"); }
+        if (!currentUser) {
+            const pass = prompt("Enter Password:");
+            if (pass === "123") {
+                currentUser = 'admin';
+                updateLoginUI('ADMIN', 'var(--admin-color)');
+            } else if (pass === "111") {
+                currentUser = 'staff';
+                updateLoginUI('STAFF (Remark Only)', 'var(--staff-color)');
+            } else { alert("Invalid Password!"); }
         } else {
-            isAdmin = false;
+            currentUser = null;
             document.getElementById('lockBtn').innerText = "🔓 Login";
-            document.getElementById('adminStatus').style.display = "none";
-            disableAdminUI();
+            document.getElementById('roleStatus').style.display = "none";
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
         }
         applyFilters();
     }
 
-    function enableAdminUI() {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
-    }
-
-    function disableAdminUI() {
-        document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'none', 'important'));
+    function updateLoginUI(label, color) {
+        const statusEl = document.getElementById('roleStatus');
+        statusEl.innerText = label;
+        statusEl.style.color = color;
+        statusEl.style.display = "block";
+        document.getElementById('lockBtn').innerText = "🔒 Logout";
+        if(currentUser === 'admin') {
+            document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
+        }
     }
 
     function toggleEntry() {
@@ -251,27 +250,24 @@
 
     function applyFilters() {
         const boeInput = document.getElementById('boeDateFilter').value;
-        const boeFormatted = formatToDB(boeInput); // Convert to DB format for matching
+        const boeFormatted = formatToDB(boeInput);
         const fromInput = document.getElementById('assFrom').value;
         const toInput = document.getElementById('assTo').value;
         const mode = document.getElementById('viewMode').value;
         const search = document.getElementById('searchInput').value.toLowerCase();
 
         const fromDate = fromInput ? new Date(fromInput) : null;
-        if(fromDate) fromDate.setHours(0,0,0,0);
         const toDate = toInput ? new Date(toInput) : null;
-        if(toDate) toDate.setHours(23,59,59,999);
 
         const filtered = assessments.filter(item => {
             const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
             const matchesBoE = !boeInput || (item.boe_date === boeFormatted);
-            
             const itemAssDate = parseDateStr(item.ass_date);
-            const isPending = !item.ass_date || item.ass_date.trim() === "" || item.ass_date === "-";
+            const isPending = !item.ass_date || item.ass_date === "-";
 
             let inRange = true;
-            if (fromDate && itemAssDate) { if (itemAssDate < fromDate) inRange = false; }
-            if (toDate && itemAssDate) { if (itemAssDate > toDate) inRange = false; }
+            if (fromDate && itemAssDate && itemAssDate < fromDate) inRange = false;
+            if (toDate && itemAssDate && itemAssDate > toDate) inRange = false;
             if ((fromDate || toDate) && !itemAssDate) inRange = false;
 
             if (mode === 'completed') return matchesSearch && matchesBoE && inRange && !isPending;
@@ -290,34 +286,30 @@
         data.forEach((item, index) => {
             const tr = document.createElement('tr');
             if (editId === item.id) {
+                const isAdmin = currentUser === 'admin';
                 tr.innerHTML = `
                     <td>${index+1}</td>
-                    <td><input value="${item.job || ''}" id="e_job"></td>
-                    <td><input value="${item.importer || ''}" id="e_imp"></td>
-                    <td><input value="${item.description || ''}" id="e_desc"></td>
-                    <td><input value="${item.bl_no || ''}" id="e_bl"></td>
-                    <td><input value="${item.lc_no || ''}" id="e_lc"></td>
-                    <td><input value="${item.boe_no || ''}" id="e_boe_n"></td>
-                    <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d"></td>
-                    <td><input value="${item.duty || ''}" id="e_duty"></td>
-                    <td><select id="e_ry"><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
-                    <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass"></td>
+                    <td><input value="${item.job || ''}" id="e_job" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.importer || ''}" id="e_imp" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.description || ''}" id="e_desc" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.bl_no || ''}" id="e_bl" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.lc_no || ''}" id="e_lc" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.boe_no || ''}" id="e_boe_n" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><select id="e_ry" ${isAdmin ? '' : 'disabled'}><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
+                    <td><input value="${item.remark || ''}" id="e_rem"></td>
+                    <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'}></td>
                     <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
             } else {
                 tr.innerHTML = `
-                    <td>${index+1}</td><td>${item.job || ''}</td>
-                    <td style="white-space:normal; min-width:180px">${item.importer || ''}</td>
-                    <td style="white-space:normal; min-width:180px">${item.description || ''}</td>
-                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td>
-                    <td style="font-weight:700">${item.boe_date || ''}</td>
-                    <td>${item.duty || ''}</td>
+                    <td>${index+1}</td><td>${item.job || ''}</td><td>${item.importer || ''}</td><td>${item.description || ''}</td>
+                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td><td>${item.boe_date || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
-                    <td style="font-weight:700; color:var(--accent)">${item.ass_date || '-'}</td>
+                    <td style="color:#2563eb; font-weight:600">${item.remark || ''}</td>
+                    <td>${item.ass_date || '-'}</td>
                     <td class="btn-col">
-                        ${isAdmin ? `
-                            <button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>
-                            <button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>
-                        ` : '<span style="color:#94a3b8; font-size:0.6rem">VIEW ONLY</span>'}
+                        ${currentUser ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
+                        ${currentUser === 'admin' ? `<button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
                     </td>`;
             }
             tbody.appendChild(tr);
@@ -325,72 +317,47 @@
     }
 
     async function addData() {
-        if(!isAdmin) return;
+        if(currentUser !== 'admin') return;
         const entry = {
-            job: document.getElementById('job_in').value, 
-            importer: document.getElementById('imp_in').value,
-            description: document.getElementById('desc_in').value, 
-            bl_no: document.getElementById('bl_in').value,
-            lc_no: document.getElementById('lc_in').value, 
-            boe_no: document.getElementById('boe_n_in').value,
-            boe_date: formatToDB(document.getElementById('boe_d_in').value), 
-            duty: document.getElementById('duty_in').value,
-            ry_status: document.getElementById('ry_in').value, 
-            ass_date: null
+            job: document.getElementById('job_in').value, importer: document.getElementById('imp_in').value,
+            description: document.getElementById('desc_in').value, bl_no: document.getElementById('bl_in').value,
+            lc_no: document.getElementById('lc_in').value, boe_no: document.getElementById('boe_n_in').value,
+            boe_date: formatToDB(document.getElementById('boe_d_in').value), ry_status: document.getElementById('ry_in').value,
+            remark: document.getElementById('rem_in').value, ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
-        if (!error) { 
-            await fetchData(); 
-            clearInputs(); 
-            // Wrapper stays open so you can add more!
-        } else {
-            alert("Error saving: " + error.message);
-        }
+        if (!error) { await fetchData(); clearInputs(); }
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
 
     async function saveEdit(id) {
-        if(!isAdmin) return;
-        const updated = {
-            job: document.getElementById('e_job').value, importer: document.getElementById('e_imp').value,
-            description: document.getElementById('e_desc').value, bl_no: document.getElementById('e_bl').value,
-            lc_no: document.getElementById('e_lc').value, boe_no: document.getElementById('e_boe_n').value,
-            boe_date: formatToDB(document.getElementById('e_boe_d').value), duty: document.getElementById('e_duty').value,
-            ry_status: document.getElementById('e_ry').value, ass_date: formatToDB(document.getElementById('e_ass').value) || null
-        };
+        let updated = {};
+        if (currentUser === 'admin') {
+            updated = {
+                job: document.getElementById('e_job').value, importer: document.getElementById('e_imp').value,
+                description: document.getElementById('e_desc').value, bl_no: document.getElementById('e_bl').value,
+                lc_no: document.getElementById('e_lc').value, boe_no: document.getElementById('e_boe_n').value,
+                boe_date: formatToDB(document.getElementById('e_boe_d').value), ry_status: document.getElementById('e_ry').value,
+                remark: document.getElementById('e_rem').value, ass_date: formatToDB(document.getElementById('e_ass').value) || null
+            };
+        } else if (currentUser === 'staff') {
+            updated = { remark: document.getElementById('e_rem').value };
+        }
         const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
         if (!error) { editId = null; await fetchData(); }
     }
 
     async function deleteRecord(id) { 
-        if(!isAdmin) return;
-        if(confirm("Delete record?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
+        if(currentUser === 'admin' && confirm("Delete?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
     }
     
     function preparePrint() { 
-        const from = document.getElementById('assFrom').value;
-        const to = document.getElementById('assTo').value;
-        const mode = document.getElementById('viewMode').value;
-        
-        let headerText = "";
-        if (from && to) headerText = `Records From ${from} to ${to}`;
-        else if (from) headerText = `Records from ${from}`;
-        else if (to) headerText = `Records up to ${to}`;
-        else headerText = "Full Database Report";
-
-        if (mode === 'combined') headerText += " (+ Pending List)";
-        if (mode === 'pending') headerText = "Pending Assessment List";
-
-        document.getElementById('print_range_text').innerText = headerText;
         document.getElementById('print_now_date').innerText = new Date().toLocaleDateString('en-GB');
         window.print(); 
     }
 
-    function clearInputs() { 
-        document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); 
-    }
-
+    function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
         const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
