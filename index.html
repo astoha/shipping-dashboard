@@ -59,20 +59,12 @@
         input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.75rem; background: white; }
 
         .table-container { flex: 1; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
         th { position: sticky; top: 0; background: #f1f5f9; padding: 10px; text-align: left; font-size: 0.65rem; color: #334155; z-index: 10; border-bottom: 2px solid #cbd5e1; }
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
 
         .col-sl { width: 40px; }
-        .col-job { width: 70px; }
-        .col-imp { width: 150px; } 
-        .col-desc { width: 150px; } 
-        .col-num { width: 90px; } 
-        .col-date { width: 90px; }
-        .col-sts { width: 85px; }
-        .col-rem { width: 130px; }
-        .col-act { width: 100px; }
-
+        .col-date { width: 95px; }
         .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
         .YELLOW { background: #fef3c7; color: #92400e; }
         .RED { background: #fee2e2; color: #b91c1c; }
@@ -162,15 +154,15 @@
                 <thead>
                     <tr>
                         <th class="col-sl">SL</th>
-                        <th class="col-job">Job</th>
-                        <th class="col-imp">Importer Name</th>
-                        <th class="col-desc">Description</th>
-                        <th class="col-num">BL No</th>
-                        <th class="col-num">LC No</th>
-                        <th class="col-num">BoE No</th>
+                        <th>Job</th>
+                        <th>Importer Name</th>
+                        <th>Description</th>
+                        <th>BL No</th>
+                        <th>LC No</th>
+                        <th>BoE No</th>
                         <th class="col-date">BoE Date</th>
-                        <th class="col-sts">Status</th>
-                        <th class="col-rem">Remark</th>
+                        <th>Status</th>
+                        <th>Remark</th>
                         <th class="col-date">Ass. Date</th>
                         <th class="col-act btn-col">Action</th>
                     </tr>
@@ -188,7 +180,7 @@
 
     let assessments = [];
     let editId = null;
-    let currentUser = null; // 'admin', 'staff', or null
+    let currentUser = null;
 
     function formatToDB(dateVal) {
         if (!dateVal) return null;
@@ -203,7 +195,7 @@
     }
 
     function parseDateStr(str) {
-        if (!str || str.length < 8 || str === '-') return null;
+        if (!str || str.length < 8 || str === '-' || str.trim() === "") return null;
         const parts = str.split('-');
         return new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
     }
@@ -256,24 +248,36 @@
         const mode = document.getElementById('viewMode').value;
         const search = document.getElementById('searchInput').value.toLowerCase();
 
-        const fromDate = fromInput ? new Date(fromInput) : null;
-        const toDate = toInput ? new Date(toInput) : null;
+        let fromDate = null;
+        if(fromInput) { fromDate = new Date(fromInput); fromDate.setHours(0,0,0,0); }
+        let toDate = null;
+        if(toInput) { toDate = new Date(toInput); toDate.setHours(23,59,59,999); }
 
-        const filtered = assessments.filter(item => {
+        let filtered = assessments.filter(item => {
             const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
             const matchesBoE = !boeInput || (item.boe_date === boeFormatted);
             const itemAssDate = parseDateStr(item.ass_date);
-            const isPending = !item.ass_date || item.ass_date === "-";
+            const isPending = !item.ass_date || item.ass_date === "-" || item.ass_date.trim() === "";
 
             let inRange = true;
-            if (fromDate && itemAssDate && itemAssDate < fromDate) inRange = false;
-            if (toDate && itemAssDate && itemAssDate > toDate) inRange = false;
-            if ((fromDate || toDate) && !itemAssDate) inRange = false;
+            if (fromDate || toDate) {
+                if (!itemAssDate) inRange = false;
+                else {
+                    if (fromDate && itemAssDate < fromDate) inRange = false;
+                    if (toDate && itemAssDate > toDate) inRange = false;
+                }
+            }
 
             if (mode === 'completed') return matchesSearch && matchesBoE && inRange && !isPending;
             if (mode === 'pending') return matchesSearch && matchesBoE && isPending;
             if (mode === 'combined') return matchesSearch && (inRange || isPending);
             return matchesSearch && matchesBoE && inRange;
+        });
+
+        filtered.sort((a, b) => {
+            const dateA = parseDateStr(a.ass_date) || new Date(0);
+            const dateB = parseDateStr(b.ass_date) || new Date(0);
+            return dateB - dateA;
         });
 
         document.getElementById('main_count').innerText = filtered.length;
@@ -303,10 +307,10 @@
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td><td>${item.job || ''}</td><td>${item.importer || ''}</td><td>${item.description || ''}</td>
-                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td><td>${item.boe_date || ''}</td>
+                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td><td style="font-weight:700">${item.boe_date || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
                     <td style="color:#2563eb; font-weight:600">${item.remark || ''}</td>
-                    <td>${item.ass_date || '-'}</td>
+                    <td style="font-weight:700">${item.ass_date || '-'}</td>
                     <td class="btn-col">
                         ${currentUser ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
                         ${currentUser === 'admin' ? `<button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
@@ -358,6 +362,7 @@
     }
 
     function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
+    
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
         const descs = [...new Set(assessments.map(i => i.description).filter(Boolean))];
