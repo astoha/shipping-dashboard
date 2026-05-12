@@ -59,7 +59,7 @@
         input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.75rem; background: white; }
 
         .table-container { flex: 1; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
         th { position: sticky; top: 0; background: #f1f5f9; padding: 10px; text-align: left; font-size: 0.65rem; color: #334155; z-index: 10; border-bottom: 2px solid #cbd5e1; }
         td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
 
@@ -161,6 +161,7 @@
                         <th>LC No</th>
                         <th>BoE No</th>
                         <th class="col-date">BoE Date</th>
+                        <th>Duty</th>
                         <th>Status</th>
                         <th>Remark</th>
                         <th class="col-date">Ass. Date</th>
@@ -300,14 +301,22 @@
                     <td><input value="${item.lc_no || ''}" id="e_lc" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input value="${item.boe_no || ''}" id="e_boe_n" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input value="${item.duty || ''}" id="e_duty" ${isAdmin ? '' : 'disabled'}></td>
                     <td><select id="e_ry" ${isAdmin ? '' : 'disabled'}><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
                     <td><input value="${item.remark || ''}" id="e_rem"></td>
                     <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'}></td>
                     <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
             } else {
                 tr.innerHTML = `
-                    <td>${index+1}</td><td>${item.job || ''}</td><td>${item.importer || ''}</td><td>${item.description || ''}</td>
-                    <td>${item.bl_no || ''}</td><td>${item.lc_no || ''}</td><td>${item.boe_no || ''}</td><td style="font-weight:700">${item.boe_date || ''}</td>
+                    <td>${index+1}</td>
+                    <td>${item.job || ''}</td>
+                    <td>${item.importer || ''}</td>
+                    <td>${item.description || ''}</td>
+                    <td>${item.bl_no || ''}</td>
+                    <td>${item.lc_no || ''}</td>
+                    <td>${item.boe_no || ''}</td>
+                    <td style="font-weight:700">${item.boe_date || ''}</td>
+                    <td style="font-weight:600; color:#1e293b">${item.duty || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
                     <td style="color:#2563eb; font-weight:600">${item.remark || ''}</td>
                     <td style="font-weight:700">${item.ass_date || '-'}</td>
@@ -322,12 +331,29 @@
 
     async function addData() {
         if(currentUser !== 'admin') return;
+        
+        const jobNo = document.getElementById('job_in').value.trim();
+        if(!jobNo) { alert("Job Number is required"); return; }
+
+        // Check for duplicate job number
+        const isDuplicate = assessments.some(item => item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase());
+        if(isDuplicate) {
+            alert(`Error: Job Number "${jobNo}" already exists in the database.`);
+            return;
+        }
+
         const entry = {
-            job: document.getElementById('job_in').value, importer: document.getElementById('imp_in').value,
-            description: document.getElementById('desc_in').value, bl_no: document.getElementById('bl_in').value,
-            lc_no: document.getElementById('lc_in').value, boe_no: document.getElementById('boe_n_in').value,
-            boe_date: formatToDB(document.getElementById('boe_d_in').value), ry_status: document.getElementById('ry_in').value,
-            remark: document.getElementById('rem_in').value, ass_date: null
+            job: jobNo, 
+            importer: document.getElementById('imp_in').value,
+            description: document.getElementById('desc_in').value, 
+            bl_no: document.getElementById('bl_in').value,
+            lc_no: document.getElementById('lc_in').value, 
+            boe_no: document.getElementById('boe_n_in').value,
+            boe_date: formatToDB(document.getElementById('boe_d_in').value), 
+            duty: document.getElementById('duty_in').value,
+            ry_status: document.getElementById('ry_in').value,
+            remark: document.getElementById('rem_in').value, 
+            ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
         if (!error) { await fetchData(); clearInputs(); }
@@ -338,12 +364,29 @@
     async function saveEdit(id) {
         let updated = {};
         if (currentUser === 'admin') {
+            const jobNo = document.getElementById('e_job').value.trim();
+            
+            // Check for duplicate job number (excluding current record being edited)
+            const isDuplicate = assessments.some(item => 
+                item.id !== id && item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase()
+            );
+            if(isDuplicate) {
+                alert(`Error: Job Number "${jobNo}" is already used by another record.`);
+                return;
+            }
+
             updated = {
-                job: document.getElementById('e_job').value, importer: document.getElementById('e_imp').value,
-                description: document.getElementById('e_desc').value, bl_no: document.getElementById('e_bl').value,
-                lc_no: document.getElementById('e_lc').value, boe_no: document.getElementById('e_boe_n').value,
-                boe_date: formatToDB(document.getElementById('e_boe_d').value), ry_status: document.getElementById('e_ry').value,
-                remark: document.getElementById('e_rem').value, ass_date: formatToDB(document.getElementById('e_ass').value) || null
+                job: jobNo, 
+                importer: document.getElementById('e_imp').value,
+                description: document.getElementById('e_desc').value, 
+                bl_no: document.getElementById('e_bl').value,
+                lc_no: document.getElementById('e_lc').value, 
+                boe_no: document.getElementById('e_boe_n').value,
+                boe_date: formatToDB(document.getElementById('e_boe_d').value), 
+                duty: document.getElementById('e_duty').value,
+                ry_status: document.getElementById('e_ry').value,
+                remark: document.getElementById('e_rem').value, 
+                ass_date: formatToDB(document.getElementById('e_ass').value) || null
             };
         } else if (currentUser === 'staff') {
             updated = { remark: document.getElementById('e_rem').value };
