@@ -237,8 +237,40 @@
     }
 
     async function fetchData() {
-        const { data, error } = await _supabase.from('assessments').select('*').order('id', { ascending: true });
-        if (!error) { assessments = data; updateSuggestions(); applyFilters(); }
+        let allData = [];
+        let from = 0;
+        let to = 999;
+        let hasMore = true;
+
+        // Loop to continuously fetch records beyond Supabase's default 1000 limit
+        while (hasMore) {
+            const { data, error } = await _supabase
+                .from('assessments')
+                .select('*')
+                .order('id', { ascending: true })
+                .range(from, to);
+
+            if (error) {
+                console.error("Fetch Error:", error);
+                break;
+            }
+
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                if (data.length < 1000) {
+                    hasMore = false; // Last page reached
+                } else {
+                    from += 1000;
+                    to += 1000;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+
+        assessments = allData;
+        updateSuggestions();
+        applyFilters();
     }
 
     function applyFilters() {
