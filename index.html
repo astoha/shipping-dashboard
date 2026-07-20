@@ -7,74 +7,110 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.9);
-            --primary: #0f172a;
-            --accent: #2563eb;
-            --border: rgba(255, 255, 255, 0.4);
-            --admin-color: #dc2626;
-            --staff-color: #059669;
+            --glass: rgba(255, 255, 255, 0.95);
+            --primary: #1e3a8a; /* Deep US Navy Blue */
+            --accent: #b91c1c;  /* US Flag Red */
+            --border: rgba(185, 28, 28, 0.25);
+            --admin-color: #b91c1c;
+            --staff-color: #1d4ed8;
         }
 
         * { box-sizing: border-box; }
         html, body { 
             height: 100vh; margin: 0; padding: 0;
             font-family: 'Inter', system-ui, sans-serif;
-            background: linear-gradient(135deg, #cbd5e1 0%, #f8fafc 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 30%, #f8fafc 65%, #b91c1c 100%);
+            background-attachment: fixed;
         }
 
         .main-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 12px; }
 
         .container {
             display: flex; flex-direction: column; flex: 1;
-            background: var(--glass); backdrop-filter: blur(12px);
-            border-radius: 12px; border: 1px solid var(--border);
-            padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--glass); backdrop-filter: blur(16px);
+            border-radius: 16px; border: 1px solid var(--border);
+            padding: 18px; box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2);
             overflow: hidden;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .corp-header { position: relative; text-align: center; margin-bottom: 10px; }
-        .corp-header h1 { margin: 0; font-size: 1.2rem; color: var(--primary); font-weight: 800; }
-        .corp-header p { margin: 1px 0; font-size: 0.7rem; color: #475569; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .corp-header { position: relative; text-align: center; margin-bottom: 12px; border-bottom: 2px solid rgba(30, 58, 138, 0.1); padding-bottom: 10px; }
+        .corp-header h1 { margin: 0; font-size: 1.3rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.75px; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .corp-header p { margin: 2px 0 0 0; font-size: 0.72rem; color: #1e3a8a; font-weight: 700; letter-spacing: 0.5px; }
 
         .top-right-tools {
             position: absolute; right: 0; top: 0;
             display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
         }
 
-        .top-counter { font-weight: 700; font-size: 0.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); }
+        .top-counter { font-weight: 800; font-size: 0.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 1px; }
         #roleStatus { font-size: 0.6rem; font-weight: 800; display: none; }
 
-        #entryWrapper { display: none; margin-bottom: 12px; }
+        #entryWrapper { display: none; margin-bottom: 12px; animation: slideDown 0.3s ease-out; }
 
-        .entry-section { background: rgba(255, 255, 255, 0.8); padding: 12px; border-radius: 8px; border: 2px solid var(--accent); }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .entry-section { background: rgba(30, 58, 138, 0.04); padding: 14px; border-radius: 10px; border: 2px solid var(--accent); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; align-items: flex-end; }
 
         .filter-section {
             display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: flex-end;
-            padding: 10px; background: rgba(37, 99, 235, 0.05); border-radius: 8px;
+            padding: 12px; background: rgba(30, 58, 138, 0.04); border-radius: 10px; border: 1px solid rgba(30, 58, 138, 0.12);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.03);
         }
         .filter-item { flex: 1; min-width: 110px; }
 
-        label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 3px; }
-        input, select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.75rem; background: white; }
+        label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 3px; letter-spacing: 0.5px; }
+        input, select { 
+            width: 100%; padding: 8px 10px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 0.75rem; background: white; color: #0f172a; 
+            transition: all 0.25s ease; cursor: pointer;
+        }
+        input[type="text"]:not([readonly]), input[type="search"] { cursor: text; }
+        input:hover, select:hover { border-color: var(--primary); }
+        input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15); }
 
-        .table-container { flex: 1; overflow: auto; background: white; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .table-container { flex: 1; overflow: auto; background: white; border-radius: 10px; border: 1px solid #93c5fd; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         table { width: 100%; border-collapse: collapse; min-width: 1300px; }
-        th { position: sticky; top: 0; background: #f1f5f9; padding: 10px; text-align: left; font-size: 0.65rem; color: #334155; z-index: 10; border-bottom: 2px solid #cbd5e1; }
-        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.72rem; }
+        th { position: sticky; top: 0; background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%); padding: 12px 10px; text-align: left; font-size: 0.65rem; color: #ffffff; z-index: 10; border-bottom: 3px solid var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.72rem; transition: background-color 0.15s ease; }
+        tr:hover td { background-color: rgba(30, 58, 138, 0.03); }
 
         .col-sl { width: 40px; }
         .col-date { width: 95px; }
-        .tag { padding: 3px 6px; border-radius: 4px; font-weight: 800; font-size: 0.6rem; }
-        .YELLOW { background: #fef3c7; color: #92400e; }
-        .RED { background: #fee2e2; color: #b91c1c; }
+        .tag { padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 0.6rem; letter-spacing: 0.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .YELLOW { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
+        .RED { background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; }
 
-        .btn { border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: 700; font-size: 0.7rem; transition: 0.2s; }
-        .btn-toggle { background: #0f172a; color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); display: none; }
-        .btn-lock { background: #cbd5e1; color: #0f172a; padding: 5px 10px; font-size: 0.65rem; }
+        .btn { 
+            border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.7rem; 
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        .btn-toggle { background: var(--primary); color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); display: none; }
+        .btn-toggle:hover { background: #172554; }
+        
+        .btn-lock { background: #ffffff; color: var(--primary); padding: 6px 12px; font-size: 0.65rem; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn-lock:hover { background: #f1f5f9; border-color: var(--primary); }
+        
         .btn-add { background: var(--accent); color: white; width: 100%; }
-        .btn-print { background: var(--accent); color: white; }
-        .btn-edit { background: #64748b; color: white; }
+        .btn-add:hover { background: #991b1b; }
+        
+        .btn-print { background: var(--primary); color: white; }
+        .btn-print:hover { background: #172554; }
+        
+        .btn-edit { background: #3b82f6; color: white; }
+        .btn-edit:hover { background: #2563eb; }
 
         .admin-only { display: none !important; }
         .print-header-info { display: none; }
@@ -103,7 +139,7 @@
             <div class="top-right-tools no-print">
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="roleStatus"></div>
-                <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔓 Login</button>
+                <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔒 Login</button>
             </div>
         </div>
 
@@ -125,7 +161,7 @@
                     <div><label>BL No</label><input type="text" id="bl_in"></div>
                     <div><label>LC No</label><input type="text" id="lc_in"></div>
                     <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
-                    <div><label>BoE Date</label><input type="date" id="boe_d_in"></div>
+                    <div><label>BoE Date</label><input type="date" id="boe_d_in" onclick="this.showPicker && this.showPicker()"></div>
                     <div><label>Duty</label><input type="text" id="duty_in"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
                     <div><label>Remark</label><input type="text" id="rem_in"></div>
@@ -135,9 +171,9 @@
         </div>
 
         <div class="filter-section no-print">
-            <div class="filter-item"><label>BoE Date Search</label><input type="date" id="boeDateFilter" onchange="applyFilters()"></div>
-            <div class="filter-item"><label>Ass. Date From</label><input type="date" id="assFrom" onchange="applyFilters()"></div>
-            <div class="filter-item"><label>Ass. Date To</label><input type="date" id="assTo" onchange="applyFilters()"></div>
+            <div class="filter-item"><label>BoE Date Search</label><input type="date" id="boeDateFilter" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
+            <div class="filter-item"><label>Ass. Date From</label><input type="date" id="assFrom" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
+            <div class="filter-item"><label>Ass. Date To</label><input type="date" id="assTo" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
             
             <div class="filter-item"><label>View</label><select id="viewMode" onchange="applyFilters()">
                 <option value="pending" selected>Non-Assessed</option>
@@ -213,7 +249,7 @@
             } else { alert("Invalid Password!"); }
         } else {
             currentUser = null;
-            document.getElementById('lockBtn').innerText = "🔓 Login";
+            document.getElementById('lockBtn').innerText = "🔒 Login";
             document.getElementById('roleStatus').style.display = "none";
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
         }
@@ -225,7 +261,7 @@
         statusEl.innerText = label;
         statusEl.style.color = color;
         statusEl.style.display = "block";
-        document.getElementById('lockBtn').innerText = "🔒 Logout";
+        document.getElementById('lockBtn').innerText = "🔓 Logout";
         if(currentUser === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
         }
@@ -332,11 +368,11 @@
                     <td><input value="${item.bl_no || ''}" id="e_bl" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input value="${item.lc_no || ''}" id="e_lc" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input value="${item.boe_no || ''}" id="e_boe_n" ${isAdmin ? '' : 'disabled'}></td>
-                    <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input type="date" value="${formatToInput(item.boe_date)}" id="e_boe_d" ${isAdmin ? '' : 'disabled'} onclick="this.showPicker && this.showPicker()"></td>
                     <td><input value="${item.duty || ''}" id="e_duty" ${isAdmin ? '' : 'disabled'}></td>
                     <td><select id="e_ry" ${isAdmin ? '' : 'disabled'}><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
                     <td><input value="${item.remark || ''}" id="e_rem"></td>
-                    <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'}></td>
+                    <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'} onclick="this.showPicker && this.showPicker()"></td>
                     <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
             } else {
                 tr.innerHTML = `
@@ -348,13 +384,13 @@
                     <td>${item.lc_no || ''}</td>
                     <td>${item.boe_no || ''}</td>
                     <td style="font-weight:700">${item.boe_date || ''}</td>
-                    <td style="font-weight:600; color:#1e293b">${item.duty || ''}</td>
+                    <td style="font-weight:600; color:#1e3a8a">${item.duty || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
-                    <td style="color:#2563eb; font-weight:600">${item.remark || ''}</td>
+                    <td style="color:#1d4ed8; font-weight:600">${item.remark || ''}</td>
                     <td style="font-weight:700">${item.ass_date || '-'}</td>
                     <td class="btn-col">
                         ${currentUser ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
-                        ${currentUser === 'admin' ? `<button class="btn" style="color:red; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
+                        ${currentUser === 'admin' ? `<button class="btn" style="color:#b91c1c; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
                     </td>`;
             }
             tbody.appendChild(tr);
