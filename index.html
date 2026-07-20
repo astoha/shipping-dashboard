@@ -28,15 +28,34 @@
         .container {
             display: flex; flex-direction: column; flex: 1;
             background: var(--glass); backdrop-filter: blur(16px);
-            border-radius: 16px; border: 1px solid var(--border);
-            padding: 18px; box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2);
+            border-radius: 16px; 
+            border: 2px solid transparent;
+            padding: 18px; 
+            box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 
+                        0 0 20px rgba(30, 58, 138, 0.4), 
+                        inset 0 0 15px rgba(185, 28, 28, 0.15);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1), borderGlow 4s infinite alternate;
             overflow: hidden;
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes borderGlow {
+            0% {
+                border-color: rgba(30, 58, 138, 0.6);
+                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 15px rgba(30, 58, 138, 0.5), inset 0 0 10px rgba(30, 58, 138, 0.2);
+            }
+            50% {
+                border-color: rgba(255, 255, 255, 0.9);
+                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 25px rgba(255, 255, 255, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.4);
+            }
+            100% {
+                border-color: rgba(185, 28, 28, 0.7);
+                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 15px rgba(185, 28, 28, 0.6), inset 0 0 10px rgba(185, 28, 28, 0.2);
+            }
         }
 
         .corp-header { position: relative; text-align: center; margin-bottom: 12px; border-bottom: 2px solid rgba(30, 58, 138, 0.1); padding-bottom: 10px; }
@@ -73,7 +92,7 @@
             width: 100%; padding: 8px 10px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 0.75rem; background: white; color: #0f172a; 
             transition: all 0.25s ease; cursor: pointer;
         }
-        input[type="text"]:not([readonly]), input[type="search"] { cursor: text; }
+        input[type="text"]:not([readonly]), input[type="search"], input[type="password"] { cursor: text; }
         input:hover, select:hover { border-color: var(--primary); }
         input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15); }
 
@@ -115,6 +134,33 @@
         .admin-only { display: none !important; }
         .print-header-info { display: none; }
 
+        /* Login Overlay Screen */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .login-card {
+            background: #ffffff; padding: 30px; border-radius: 16px; width: 340px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 2px solid var(--accent); text-align: center;
+        }
+        .login-card h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-transform: uppercase; }
+        .login-card p { font-size: 0.75rem; color: #64748b; margin-bottom: 20px; }
+        .login-card input { margin-bottom: 12px; }
+        .login-card button { width: 100%; background: var(--accent); color: white; padding: 10px; font-size: 0.8rem; margin-top: 5px; }
+
+        /* User Management Modal Styles */
+        #userModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+            justify-content: center; align-items: center; z-index: 8888;
+        }
+        .user-modal-content {
+            background: white; padding: 20px; border-radius: 12px; width: 500px; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-top: 4px solid var(--primary);
+        }
+
         @media print {
             @page { size: landscape; margin: 5mm; }
             html, body { height: auto !important; overflow: visible !important; background: white; }
@@ -131,6 +177,55 @@
 </head>
 <body>
 
+<!-- Login Overlay Screen -->
+<div id="loginOverlay">
+    <div class="login-card">
+        <h2>Chevron Lines</h2>
+        <p>Please log in to access the Secure Manager</p>
+        <div style="text-align: left;"><label>User ID</label></div>
+        <input type="text" id="loginUser" placeholder="Enter User ID">
+        <div style="text-align: left;"><label>Password</label></div>
+        <input type="password" id="loginPass" placeholder="Enter Password">
+        <button class="btn btn-add" onclick="handleLogin()">Login</button>
+    </div>
+</div>
+
+<!-- Admin User Management Modal -->
+<div id="userModal">
+    <div class="user-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin:0; color:var(--primary); font-size:1rem;">Manage System Users</h3>
+            <button class="btn" style="background:#cbd5e1; color:#0f172a; padding:4px 8px;" onclick="toggleUserModal(false)">Close</button>
+        </div>
+        <div style="background: rgba(30, 58, 138, 0.04); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1;">
+            <h4 style="margin:0 0 8px 0; font-size:0.75rem; color:var(--primary);">Add New User / Change Password</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="new_uid" placeholder="User ID">
+                <input type="text" id="new_upass" placeholder="Password">
+                <select id="new_urole">
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                </select>
+            </div>
+            <button class="btn btn-add" onclick="saveUserRecord()">Save User</button>
+        </div>
+        <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">Existing Users List:</div>
+        <div id="userListContainer" style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+            <table style="width:100%; min-width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#f1f5f9;">
+                        <th style="padding:6px; font-size:0.6rem;">User ID</th>
+                        <th style="padding:6px; font-size:0.6rem;">Role</th>
+                        <th style="padding:6px; font-size:0.6rem;">Password</th>
+                        <th style="padding:6px; font-size:0.6rem; text-align:right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="main-wrapper">
     <div class="container">
         <div class="corp-header">
@@ -139,7 +234,10 @@
             <div class="top-right-tools no-print">
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="roleStatus"></div>
-                <button class="btn btn-lock" id="lockBtn" onclick="handleSecurity()">🔒 Login</button>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn btn-lock admin-only" id="manageUsersBtn" onclick="toggleUserModal(true)">⚙️ Users</button>
+                    <button class="btn btn-lock" id="lockBtn" onclick="handleLogout()">🔓 Logout</button>
+                </div>
             </div>
         </div>
 
@@ -216,6 +314,7 @@
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     let assessments = [];
+    let systemUsers = [];
     let editId = null;
     let currentUser = null;
 
@@ -237,33 +336,124 @@
         return new Date(2000 + parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
     }
 
-    function handleSecurity() {
-        if (!currentUser) {
-            const pass = prompt("Enter Password:");
-            if (pass === "123") {
-                currentUser = 'admin';
-                updateLoginUI('ADMIN', 'var(--admin-color)');
-            } else if (pass === "111") {
-                currentUser = 'staff';
-                updateLoginUI('STAFF (Remark Only)', 'var(--staff-color)');
-            } else { alert("Invalid Password!"); }
+    async function fetchUsers() {
+        const { data, error } = await _supabase.from('users').select('*');
+        if (!error && data) {
+            systemUsers = data;
+            if(systemUsers.length === 0) {
+                await _supabase.from('users').insert([{ user_id: 'admin', password: '123', role: 'admin' }]);
+                const res = await _supabase.from('users').select('*');
+                if(res.data) systemUsers = res.data;
+            }
         } else {
-            currentUser = null;
-            document.getElementById('lockBtn').innerText = "🔒 Login";
-            document.getElementById('roleStatus').style.display = "none";
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+            // Fallback hardcoded admin if table hasn't been created yet in Supabase
+            systemUsers = [{ user_id: 'admin', password: '123', role: 'admin' }];
         }
-        applyFilters();
+    }
+
+    async function handleLogin() {
+        const uid = document.getElementById('loginUser').value.trim();
+        const upass = document.getElementById('loginPass').value.trim();
+        
+        await fetchUsers();
+        const found = systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase() && u.password === upass);
+
+        if (found) {
+            currentUser = found;
+            document.getElementById('loginOverlay').style.display = 'none';
+            if (found.role === 'admin') {
+                updateLoginUI('ADMIN', 'var(--admin-color)');
+            } else {
+                updateLoginUI('STAFF (Remark Only)', 'var(--staff-color)');
+            }
+            fetchData();
+        } else {
+            alert("Invalid User ID or Password!");
+        }
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('loginUser').value = '';
+        document.getElementById('loginPass').value = '';
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('roleStatus').style.display = "none";
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.getElementById('userModal').style.display = 'none';
     }
 
     function updateLoginUI(label, color) {
         const statusEl = document.getElementById('roleStatus');
-        statusEl.innerText = label;
+        statusEl.innerText = `${currentUser.user_id.toUpperCase()} (${label})`;
         statusEl.style.color = color;
         statusEl.style.display = "block";
-        document.getElementById('lockBtn').innerText = "🔓 Logout";
-        if(currentUser === 'admin') {
+        if(currentUser.role === 'admin') {
             document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
+        }
+    }
+
+    function toggleUserModal(show) {
+        if(currentUser && currentUser.role === 'admin') {
+            document.getElementById('userModal').style.display = show ? 'flex' : 'none';
+            if(show) renderUserTable();
+        }
+    }
+
+    async function renderUserTable() {
+        await fetchUsers();
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = '';
+        systemUsers.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding:6px; font-size:0.7rem; font-weight:700;">${u.user_id}</td>
+                <td style="padding:6px; font-size:0.7rem;">${u.role}</td>
+                <td style="padding:6px; font-size:0.7rem;">${u.password}</td>
+                <td style="padding:6px; font-size:0.7rem; text-align:right;">
+                    <button class="btn" style="color:red; background:none; padding:2px 6px;" onclick="deleteUser('${u.user_id}')">X</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function saveUserRecord() {
+        const uid = document.getElementById('new_uid').value.trim();
+        const upass = document.getElementById('new_upass').value.trim();
+        const urole = document.getElementById('new_urole').value;
+
+        if(!uid || !upass) {
+            alert("User ID and Password are required!");
+            return;
+        }
+
+        const exists = systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase());
+        let error;
+        if(exists) {
+            const res = await _supabase.from('users').update({ password: upass, role: urole }).eq('user_id', uid);
+            error = res.error;
+        } else {
+            const res = await _supabase.from('users').insert([{ user_id: uid, password: upass, role: urole }]);
+            error = res.error;
+        }
+
+        if(!error) {
+            document.getElementById('new_uid').value = '';
+            document.getElementById('new_upass').value = '';
+            renderUserTable();
+        } else {
+            alert("Error saving user. Make sure the 'users' table exists in Supabase. Details: " + error.message);
+        }
+    }
+
+    async function deleteUser(uid) {
+        if(uid.toLowerCase() === 'admin') {
+            alert("Cannot delete the core admin account!");
+            return;
+        }
+        if(confirm(`Delete user "${uid}"?`)) {
+            const { error } = await _supabase.from('users').delete().eq('user_id', uid);
+            if(!error) renderUserTable();
         }
     }
 
@@ -278,7 +468,6 @@
         let to = 999;
         let hasMore = true;
 
-        // Loop to continuously fetch records beyond Supabase's default 1000 limit
         while (hasMore) {
             const { data, error } = await _supabase
                 .from('assessments')
@@ -294,7 +483,7 @@
             if (data && data.length > 0) {
                 allData = allData.concat(data);
                 if (data.length < 1000) {
-                    hasMore = false; // Last page reached
+                    hasMore = false;
                 } else {
                     from += 1000;
                     to += 1000;
@@ -358,8 +547,8 @@
         tbody.innerHTML = '';
         data.forEach((item, index) => {
             const tr = document.createElement('tr');
+            const isAdmin = currentUser && currentUser.role === 'admin';
             if (editId === item.id) {
-                const isAdmin = currentUser === 'admin';
                 tr.innerHTML = `
                     <td>${index+1}</td>
                     <td><input value="${item.job || ''}" id="e_job" ${isAdmin ? '' : 'disabled'}></td>
@@ -390,7 +579,7 @@
                     <td style="font-weight:700">${item.ass_date || '-'}</td>
                     <td class="btn-col">
                         ${currentUser ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
-                        ${currentUser === 'admin' ? `<button class="btn" style="color:#b91c1c; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
+                        ${isAdmin ? `<button class="btn" style="color:#b91c1c; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
                     </td>`;
             }
             tbody.appendChild(tr);
@@ -398,12 +587,11 @@
     }
 
     async function addData() {
-        if(currentUser !== 'admin') return;
+        if(!currentUser || currentUser.role !== 'admin') return;
         
         const jobNo = document.getElementById('job_in').value.trim();
         if(!jobNo) { alert("Job Number is required"); return; }
 
-        // Check for duplicate job number
         const isDuplicate = assessments.some(item => item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase());
         if(isDuplicate) {
             alert(`Error: Job Number "${jobNo}" already exists in the database.`);
@@ -431,10 +619,10 @@
 
     async function saveEdit(id) {
         let updated = {};
-        if (currentUser === 'admin') {
+        const isAdmin = currentUser && currentUser.role === 'admin';
+        if (isAdmin) {
             const jobNo = document.getElementById('e_job').value.trim();
             
-            // Check for duplicate job number (excluding current record being edited)
             const isDuplicate = assessments.some(item => 
                 item.id !== id && item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase()
             );
@@ -456,7 +644,7 @@
                 remark: document.getElementById('e_rem').value, 
                 ass_date: formatToDB(document.getElementById('e_ass').value) || null
             };
-        } else if (currentUser === 'staff') {
+        } else if (currentUser && currentUser.role === 'staff') {
             updated = { remark: document.getElementById('e_rem').value };
         }
         const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
@@ -464,7 +652,10 @@
     }
 
     async function deleteRecord(id) { 
-        if(currentUser === 'admin' && confirm("Delete?")) { await _supabase.from('assessments').delete().eq('id', id); fetchData(); } 
+        if(currentUser && currentUser.role === 'admin' && confirm("Delete?")) { 
+            await _supabase.from('assessments').delete().eq('id', id); 
+            fetchData(); 
+        } 
     }
     
     function preparePrint() { 
@@ -480,7 +671,6 @@
         document.getElementById('imp_suggestions').innerHTML = imps.map(i => `<option value="${i}">`).join('');
         document.getElementById('desc_suggestions').innerHTML = descs.map(i => `<option value="${i}">`).join('');
     }
-    fetchData();
 </script>
 </body>
 </html>
