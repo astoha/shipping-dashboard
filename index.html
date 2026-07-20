@@ -204,7 +204,8 @@
                 <input type="text" id="new_upass" placeholder="Password">
                 <select id="new_urole">
                     <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
+                    <option value="staff">Staff (Remark Access)</option>
+                    <option value="staff_noremark">Staff (No Remark)</option>
                 </select>
             </div>
             <button class="btn btn-add" onclick="saveUserRecord()">Save User</button>
@@ -318,6 +319,14 @@
     let editId = null;
     let currentUser = null;
 
+    // Enable Enter key submission on login fields
+    document.getElementById('loginUser').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('loginPass').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') handleLogin();
+    });
+
     function formatToDB(dateVal) {
         if (!dateVal) return null;
         const [y, m, d] = dateVal.split('-');
@@ -346,7 +355,6 @@
                 if(res.data) systemUsers = res.data;
             }
         } else {
-            // Fallback hardcoded admin if table hasn't been created yet in Supabase
             systemUsers = [{ user_id: 'admin', password: '123', role: 'admin' }];
         }
     }
@@ -363,8 +371,10 @@
             document.getElementById('loginOverlay').style.display = 'none';
             if (found.role === 'admin') {
                 updateLoginUI('ADMIN', 'var(--admin-color)');
-            } else {
+            } else if (found.role === 'staff') {
                 updateLoginUI('STAFF (Remark Only)', 'var(--staff-color)');
+            } else {
+                updateLoginUI('STAFF (View Only)', '#64748b');
             }
             fetchData();
         } else {
@@ -548,6 +558,8 @@
         data.forEach((item, index) => {
             const tr = document.createElement('tr');
             const isAdmin = currentUser && currentUser.role === 'admin';
+            const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff');
+            
             if (editId === item.id) {
                 tr.innerHTML = `
                     <td>${index+1}</td>
@@ -562,7 +574,10 @@
                     <td><select id="e_ry" ${isAdmin ? '' : 'disabled'}><option ${item.ry_status=='YELLOW'?'selected':''}>YELLOW</option><option ${item.ry_status=='RED'?'selected':''}>RED</option></select></td>
                     <td><input value="${item.remark || ''}" id="e_rem"></td>
                     <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'} onclick="this.showPicker && this.showPicker()"></td>
-                    <td class="btn-col"><button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button></td>`;
+                    <td class="btn-col">
+                        <button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button>
+                        <button class="btn" style="background:#cbd5e1; color:#0f172a; margin-top:2px;" onclick="cancelEdit()">Cancel</button>
+                    </td>`;
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td>
@@ -578,7 +593,7 @@
                     <td style="color:#1d4ed8; font-weight:600">${item.remark || ''}</td>
                     <td style="font-weight:700">${item.ass_date || '-'}</td>
                     <td class="btn-col">
-                        ${currentUser ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
+                        ${canEdit ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
                         ${isAdmin ? `<button class="btn" style="color:#b91c1c; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
                     </td>`;
             }
@@ -616,6 +631,7 @@
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
+    function cancelEdit() { editId = null; applyFilters(); }
 
     async function saveEdit(id) {
         let updated = {};
