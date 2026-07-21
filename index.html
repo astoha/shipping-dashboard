@@ -97,8 +97,14 @@
         input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15); }
 
         .table-container { flex: 1; overflow: auto; background: white; border-radius: 10px; border: 1px solid #93c5fd; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-        table { width: 100%; border-collapse: collapse; min-width: 1300px; }
-        th { position: sticky; top: 0; background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%); padding: 12px 10px; text-align: left; font-size: 0.65rem; color: #ffffff; z-index: 10; border-bottom: 3px solid var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1150px; }
+        th { 
+            position: sticky; top: 0; 
+            background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%); 
+            padding: 12px 10px; text-align: left; font-size: 0.65rem; color: #ffffff; 
+            z-index: 100; border-bottom: 3px solid var(--accent); 
+            text-transform: uppercase; letter-spacing: 0.6px; 
+        }
         td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.72rem; transition: background-color 0.15s ease; }
         tr:hover td { background-color: rgba(30, 58, 138, 0.03); }
 
@@ -150,14 +156,14 @@
         .login-card input { margin-bottom: 12px; }
         .login-card button { width: 100%; background: var(--accent); color: white; padding: 10px; font-size: 0.8rem; margin-top: 5px; }
 
-        /* User Management Modal Styles */
+        /* User & Audit Logs Modal Styles */
         #userModal {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
             justify-content: center; align-items: center; z-index: 8888;
         }
         .user-modal-content {
-            background: white; padding: 20px; border-radius: 12px; width: 500px; max-height: 80vh; overflow-y: auto;
+            background: white; padding: 20px; border-radius: 12px; width: 780px; max-height: 85vh; overflow-y: auto;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-top: 4px solid var(--primary);
         }
 
@@ -169,7 +175,7 @@
             .print-header-info { display: block; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; font-size: 0.85rem; }
             .table-container { height: auto !important; overflow: visible !important; display: block; border: none; }
             table { min-width: 100% !important; width: 100% !important; table-layout: auto !important; }
-            th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; }
+            th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; z-index: 1 !important; }
             td { border: 1px solid #000 !important; }
             .no-print, .btn-col, .btn-lock, .admin-only, #roleStatus { display: none !important; }
         }
@@ -190,40 +196,72 @@
     </div>
 </div>
 
-<!-- Admin User Management Modal -->
+<!-- Admin User Management & Audit Modal -->
 <div id="userModal">
     <div class="user-modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin:0; color:var(--primary); font-size:1rem;">Manage System Users</h3>
+            <h3 style="margin:0; color:var(--primary); font-size:1rem;">Security Audit Logs & Users</h3>
             <button class="btn" style="background:#cbd5e1; color:#0f172a; padding:4px 8px;" onclick="toggleUserModal(false)">Close</button>
         </div>
-        <div style="background: rgba(30, 58, 138, 0.04); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1;">
-            <h4 style="margin:0 0 8px 0; font-size:0.75rem; color:var(--primary);">Add New User / Change Password</h4>
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <input type="text" id="new_uid" placeholder="User ID">
-                <input type="text" id="new_upass" placeholder="Password">
-                <select id="new_urole">
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff (Remark Access)</option>
-                    <option value="staff_noremark">Staff (No Remark)</option>
-                </select>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; flex-wrap: wrap;">
+            <button class="btn btn-print" onclick="switchAuditTab('users')" id="tabUsersBtn">Manage Users</button>
+            <button class="btn btn-lock" onclick="switchAuditTab('logins')" id="tabLoginsBtn">Login Activity Tracker</button>
+        </div>
+
+        <div id="sectionUsers">
+            <div style="background: rgba(30, 58, 138, 0.04); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1;">
+                <h4 style="margin:0 0 8px 0; font-size:0.75rem; color:var(--primary);" id="userFormTitle">Add New User / Change Password</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <input type="text" id="new_uid" placeholder="User ID">
+                    <input type="text" id="new_upass" placeholder="Password">
+                    <select id="new_urole">
+                        <option value="admin">Admin</option>
+                        <option value="staff">Staff (Remark Access)</option>
+                        <option value="staff_noremark">Staff (No Remark)</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-add" id="saveUserBtn" onclick="saveUserRecord()">Save User</button>
+                    <button class="btn" id="cancelUserEditBtn" style="display:none; background:#cbd5e1; color:#0f172a;" onclick="cancelUserEdit()">Cancel</button>
+                </div>
             </div>
-            <button class="btn btn-add" onclick="saveUserRecord()">Save User</button>
+            <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">Existing Users List:</div>
+            <div id="userListContainer" style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; max-height: 200px; overflow-y: auto;">
+                <table style="width:100%; min-width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="padding:6px; font-size:0.6rem; position:static;">User ID</th>
+                            <th style="padding:6px; font-size:0.6rem; position:static;">Role</th>
+                            <th style="padding:6px; font-size:0.6rem; position:static;">Password</th>
+                            <th style="padding:6px; font-size:0.6rem; text-align:right; position:static;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody"></tbody>
+                </table>
+            </div>
         </div>
-        <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">Existing Users List:</div>
-        <div id="userListContainer" style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
-            <table style="width:100%; min-width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr style="background:#f1f5f9;">
-                        <th style="padding:6px; font-size:0.6rem;">User ID</th>
-                        <th style="padding:6px; font-size:0.6rem;">Role</th>
-                        <th style="padding:6px; font-size:0.6rem;">Password</th>
-                        <th style="padding:6px; font-size:0.6rem; text-align:right;">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="userTableBody"></tbody>
-            </table>
+
+        <div id="sectionLogins" style="display: none;">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; background: rgba(30, 58, 138, 0.04); padding: 8px; border-radius: 6px;">
+                <div style="flex: 1;"><label>Filter by Date</label><input type="date" id="loginDateFilter" onchange="renderLoginLogsTable()" onclick="this.showPicker && this.showPicker()"></div>
+                <div style="flex: 1;"><label>Filter by User ID</label><select id="loginUserFilter" onchange="renderLoginLogsTable()"><option value="">All Users</option></select></div>
+                <div><button class="btn" style="background:#cbd5e1; color:#0f172a;" onclick="clearLoginFilters()">Reset</button></div>
+            </div>
+            <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">System Login Records (Latest First):</div>
+            <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; max-height: 250px; overflow-y: auto;">
+                <table style="width:100%; min-width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="padding:6px; font-size:0.6rem; position:static;">User ID</th>
+                            <th style="padding:6px; font-size:0.6rem; position:static;">Login Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loginTableBody"></tbody>
+                </table>
+            </div>
         </div>
+
     </div>
 </div>
 
@@ -236,7 +274,7 @@
                 <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="roleStatus"></div>
                 <div style="display: flex; gap: 5px;">
-                    <button class="btn btn-lock admin-only" id="manageUsersBtn" onclick="toggleUserModal(true)">⚙️ Users</button>
+                    <button class="btn btn-lock admin-only" id="manageUsersBtn" onclick="toggleUserModal(true)">⚙️ Security Log</button>
                     <button class="btn btn-lock" id="lockBtn" onclick="handleLogout()">🔓 Logout</button>
                 </div>
             </div>
@@ -280,7 +318,7 @@
                 <option value="completed">Assessed</option>
                 <option value="combined">Date View + Pendings</option>
             </select></div>
-            <div class="filter-item" style="flex: 2;"><label>Global Search</label><input type="text" id="searchInput" placeholder="Search..." onkeyup="applyFilters()"></div>
+            <div class="filter-item" style="flex: 2;"><label>Search</label><input type="text" id="searchInput" placeholder="Search keywords..." onkeyup="applyFilters()"></div>
             <button class="btn btn-print" onclick="preparePrint()">Print</button>
         </div>
 
@@ -318,8 +356,8 @@
     let systemUsers = [];
     let editId = null;
     let currentUser = null;
+    let editingUserId = null;
 
-    // Enable Enter key submission on login fields
     document.getElementById('loginUser').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') handleLogin();
     });
@@ -368,6 +406,10 @@
 
         if (found) {
             currentUser = found;
+            
+            const nowIso = new Date().toLocaleString('en-GB');
+            await _supabase.from('login_logs').insert([{ user_id: found.user_id, login_time: nowIso }]);
+
             document.getElementById('loginOverlay').style.display = 'none';
             if (found.role === 'admin') {
                 updateLoginUI('ADMIN', 'var(--admin-color)');
@@ -405,7 +447,31 @@
     function toggleUserModal(show) {
         if(currentUser && currentUser.role === 'admin') {
             document.getElementById('userModal').style.display = show ? 'flex' : 'none';
-            if(show) renderUserTable();
+            if(show) {
+                switchAuditTab('users');
+            }
+        }
+    }
+
+    function switchAuditTab(tab) {
+        document.getElementById('sectionUsers').style.display = 'none';
+        document.getElementById('sectionLogins').style.display = 'none';
+        document.getElementById('tabUsersBtn').style.background = '#ffffff';
+        document.getElementById('tabUsersBtn').style.color = 'var(--primary)';
+        document.getElementById('tabLoginsBtn').style.background = '#ffffff';
+        document.getElementById('tabLoginsBtn').style.color = 'var(--primary)';
+
+        if(tab === 'users') {
+            document.getElementById('sectionUsers').style.display = 'block';
+            document.getElementById('tabUsersBtn').style.background = 'var(--primary)';
+            document.getElementById('tabUsersBtn').style.color = '#ffffff';
+            renderUserTable();
+        } else if(tab === 'logins') {
+            document.getElementById('sectionLogins').style.display = 'block';
+            document.getElementById('tabLoginsBtn').style.background = 'var(--primary)';
+            document.getElementById('tabLoginsBtn').style.color = '#ffffff';
+            populateLoginUserDropdown();
+            renderLoginLogsTable();
         }
     }
 
@@ -420,11 +486,88 @@
                 <td style="padding:6px; font-size:0.7rem;">${u.role}</td>
                 <td style="padding:6px; font-size:0.7rem;">${u.password}</td>
                 <td style="padding:6px; font-size:0.7rem; text-align:right;">
+                    <button class="btn" style="color:#3b82f6; background:none; padding:2px 6px;" onclick="startEditUser('${u.user_id}', '${u.password}', '${u.role}')">Edit</button>
                     <button class="btn" style="color:red; background:none; padding:2px 6px;" onclick="deleteUser('${u.user_id}')">X</button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    function startEditUser(uid, upass, urole) {
+        editingUserId = uid;
+        document.getElementById('new_uid').value = uid;
+        document.getElementById('new_uid').disabled = true;
+        document.getElementById('new_upass').value = upass;
+        document.getElementById('new_urole').value = urole;
+        document.getElementById('userFormTitle').innerText = `Edit User: ${uid}`;
+        document.getElementById('saveUserBtn').innerText = 'Update User';
+        document.getElementById('cancelUserEditBtn').style.display = 'inline-block';
+    }
+
+    function cancelUserEdit() {
+        editingUserId = null;
+        document.getElementById('new_uid').value = '';
+        document.getElementById('new_uid').disabled = false;
+        document.getElementById('new_upass').value = '';
+        document.getElementById('new_urole').value = 'admin';
+        document.getElementById('userFormTitle').innerText = 'Add New User / Change Password';
+        document.getElementById('saveUserBtn').innerText = 'Save User';
+        document.getElementById('cancelUserEditBtn').style.display = 'none';
+    }
+
+    async function populateLoginUserDropdown() {
+        await fetchUsers();
+        const select = document.getElementById('loginUserFilter');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">All Users</option>';
+        systemUsers.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.user_id;
+            opt.textContent = u.user_id;
+            select.appendChild(opt);
+        });
+        select.value = currentVal;
+    }
+
+    async function renderLoginLogsTable() {
+        const { data, error } = await _supabase.from('login_logs').select('*').order('id', { ascending: false }).limit(500);
+        const tbody = document.getElementById('loginTableBody');
+        tbody.innerHTML = '';
+        
+        if(!error && data) {
+            const dateFilter = document.getElementById('loginDateFilter').value; // YYYY-MM-DD
+            const userFilter = document.getElementById('loginUserFilter').value.trim().toLowerCase();
+
+            let filtered = data.filter(log => {
+                if (userFilter && log.user_id.toLowerCase() !== userFilter) return false;
+                if (dateFilter) {
+                    const parts = log.login_time.split(/[\/\,\-\s:]+/);
+                    if (parts.length >= 3) {
+                        let d = parts[0], m = parts[1], y = parts[2];
+                        if (y.length === 2) y = '20' + y;
+                        const logDateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+                        if (logDateStr !== dateFilter) return false;
+                    }
+                }
+                return true;
+            });
+
+            filtered.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:6px; font-size:0.7rem; font-weight:700; color:var(--primary);">${log.user_id}</td>
+                    <td style="padding:6px; font-size:0.7rem;">${log.login_time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    function clearLoginFilters() {
+        document.getElementById('loginDateFilter').value = '';
+        document.getElementById('loginUserFilter').value = '';
+        renderLoginLogsTable();
     }
 
     async function saveUserRecord() {
@@ -437,19 +580,22 @@
             return;
         }
 
-        const exists = systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase());
         let error;
-        if(exists) {
-            const res = await _supabase.from('users').update({ password: upass, role: urole }).eq('user_id', uid);
+        if(editingUserId) {
+            const res = await _supabase.from('users').update({ password: upass, role: urole }).eq('user_id', editingUserId);
             error = res.error;
         } else {
+            const exists = systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase());
+            if(exists) {
+                alert("User ID already exists! Use Edit instead.");
+                return;
+            }
             const res = await _supabase.from('users').insert([{ user_id: uid, password: upass, role: urole }]);
             error = res.error;
         }
 
         if(!error) {
-            document.getElementById('new_uid').value = '';
-            document.getElementById('new_upass').value = '';
+            cancelUserEdit();
             renderUserTable();
         } else {
             alert("Error saving user. Make sure the 'users' table exists in Supabase. Details: " + error.message);
@@ -514,7 +660,7 @@
         const fromInput = document.getElementById('assFrom').value;
         const toInput = document.getElementById('assTo').value;
         const mode = document.getElementById('viewMode').value;
-        const search = document.getElementById('searchInput').value.toLowerCase();
+        const searchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
 
         let fromDate = null;
         if(fromInput) { fromDate = new Date(fromInput); fromDate.setHours(0,0,0,0); }
@@ -522,7 +668,7 @@
         if(toInput) { toDate = new Date(toInput); toDate.setHours(23,59,59,999); }
 
         let filtered = assessments.filter(item => {
-            const matchesSearch = Object.values(item).some(v => String(v).toLowerCase().includes(search));
+            const matchesSearch = !searchKeyword || Object.values(item).some(v => String(v).toLowerCase().includes(searchKeyword));
             const matchesBoE = !boeInput || (item.boe_date === boeFormatted);
             const itemAssDate = parseDateStr(item.ass_date);
             const isPending = !item.ass_date || item.ass_date === "-" || item.ass_date.trim() === "";
@@ -577,7 +723,7 @@
                     <td class="btn-col">
                         <button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button>
                         <button class="btn" style="background:#cbd5e1; color:#0f172a; margin-top:2px;" onclick="cancelEdit()">Cancel</button>
-                    </td>`;
+                    `;
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td>
@@ -627,7 +773,12 @@
             ass_date: null
         };
         const { error } = await _supabase.from('assessments').insert([entry]);
-        if (!error) { await fetchData(); clearInputs(); }
+        if (!error) {
+            await fetchData(); 
+            clearInputs(); 
+        } else {
+            alert("Error saving data: " + error.message);
+        }
     }
 
     function startEdit(id) { editId = id; applyFilters(); }
@@ -636,6 +787,7 @@
     async function saveEdit(id) {
         let updated = {};
         const isAdmin = currentUser && currentUser.role === 'admin';
+
         if (isAdmin) {
             const jobNo = document.getElementById('e_job').value.trim();
             
@@ -661,16 +813,27 @@
                 ass_date: formatToDB(document.getElementById('e_ass').value) || null
             };
         } else if (currentUser && currentUser.role === 'staff') {
-            updated = { remark: document.getElementById('e_rem').value };
+            updated = { 
+                remark: document.getElementById('e_rem').value
+            };
         }
         const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
-        if (!error) { editId = null; await fetchData(); }
+        if (!error) {
+            editId = null; 
+            await fetchData(); 
+        } else {
+            alert("Error updating data: " + error.message);
+        }
     }
 
     async function deleteRecord(id) { 
         if(currentUser && currentUser.role === 'admin' && confirm("Delete?")) { 
-            await _supabase.from('assessments').delete().eq('id', id); 
-            fetchData(); 
+            const { error } = await _supabase.from('assessments').delete().eq('id', id); 
+            if(!error) {
+                fetchData(); 
+            } else {
+                alert("Error deleting record: " + error.message);
+            }
         } 
     }
     
