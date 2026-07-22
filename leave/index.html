@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chevron Lines (C & F) Ltd - Leave Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast-enter { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col items-end pointer-events-none"></div>
+
+    <!-- ================= AUTHENTICATION SCREEN ================= -->
+    <div id="authScreen" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 border border-slate-100">
+            <div class="text-center mb-8">
+                <div class="bg-sky-600 text-white w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-sky-600/30 text-xl font-bold">
+                    <i class="fa-solid fa-building-shield"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900 leading-tight">Chevron Lines (C & F) Ltd.</h1>
+                <p class="text-[11px] text-slate-500 mt-1">Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
+                <p class="text-xs font-semibold tracking-wider text-sky-600 uppercase mt-2">Leave Management System</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Login ID / Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" id="loginId" required placeholder="Enter Login ID or 'admin'" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white text-sm transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white text-sm transition">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-sky-600/25 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP CONTAINER ================= -->
+    <div id="appContainer" class="hidden flex-grow flex flex-col justify-between">
+        
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-sky-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-base shadow shrink-0">
+                        <i class="fa-solid fa-building-shield"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-slate-900 text-sm sm:text-base block leading-tight">Chevron Lines (C & F) Ltd.</span>
+                        <span class="text-[9px] text-slate-400 block leading-tight">Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden sm:flex flex-col text-right">
+                        <span id="loggedInUserDisplay" class="text-sm font-bold text-slate-800"></span>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Active Session</span>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-rose-100">
+                        <i class="fa-solid fa-power-off"></i> <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+
+            <!-- ================= ADMIN VIEW ================= -->
+            <div id="viewAdmin" class="hidden space-y-8">
+                
+                <!-- Admin Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                        <div class="bg-sky-50 text-sky-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-users"></i></div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Employees</p>
+                            <h3 id="statTotalEmp" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                        <div class="bg-amber-50 text-amber-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Pending Requests</p>
+                            <h3 id="statPending" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                        <div class="bg-emerald-50 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Approved Leaves</p>
+                            <h3 id="statApproved" class="text-2xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Employee Form Section -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8">
+                    <h2 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-sky-600"></i> Register New Employee Account
+                    </h2>
+                    <form id="addEmployeeForm" onsubmit="handleRegisterEmployee(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Full Name</label>
+                            <input type="text" id="empName" required placeholder="e.g. John Doe" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Login ID</label>
+                            <input type="text" id="empLoginId" required placeholder="e.g. john.doe" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Password</label>
+                            <input type="text" id="empPassword" required placeholder="Secure password" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Mobile Number</label>
+                            <input type="text" id="empMobile" required placeholder="017xxxxxxxx" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Role</label>
+                            <select id="empRole" onchange="toggleTLDropdown()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <option value="Employee">Employee</option>
+                                <option value="TeamLeader">Team Leader</option>
+                                <option value="Manager">Manager</option>
+                            </select>
+                        </div>
+                        <div id="tlSelectWrapper">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Reports To (Team Leader)</label>
+                            <select id="empAssignedTL" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <option value="None">None / Direct</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2 lg:col-span-3 flex justify-end mt-2">
+                            <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm shadow-md transition flex items-center gap-2">
+                                <i class="fa-solid fa-check"></i> Create Employee Credentials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Employee Directory Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-address-book text-sky-600"></i> Registered Employee Directory
+                        </h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase text-[11px] font-bold tracking-wider border-b border-slate-100">
+                                    <th class="px-4 sm:px-6 py-3.5">SL</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Name</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Login ID</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Mobile</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Role</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Reports To</th>
+                                    <th class="px-4 sm:px-6 py-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminEmployeeTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================= USER PORTAL & APPROVAL VIEW ================= -->
+            <div id="viewUserPortal" class="hidden space-y-8">
+                
+                <!-- Welcome Banner & Apply Button -->
+                <div class="bg-gradient-to-r from-sky-600 to-sky-700 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-sky-600/15 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                    <div>
+                        <span class="bg-sky-500/40 text-sky-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-2">Employee Portal</span>
+                        <h1 id="welcomeName" class="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome</h1>
+                        <p id="welcomeRole" class="text-sky-100 text-sm mt-1"></p>
+                    </div>
+                    <button onclick="openApplyModal()" class="bg-white hover:bg-sky-50 text-sky-700 font-bold px-6 py-3 rounded-xl shadow-lg transition flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-plus text-sky-600"></i> Apply For Leave
+                    </button>
+                </div>
+
+                <!-- Leave Balances & Analytics -->
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-sky-600"></i> Balance Summary & Analytics
+                        </h2>
+                        <select id="dashboardYearFilter" onchange="renderUserDashboard()" class="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Casual Leave (CL)</p>
+                            <h3 id="balClRemaining" class="text-2xl font-extrabold text-slate-800 mt-2">10 / 10</h3>
+                            <span class="text-[11px] text-slate-400 block mt-1">Yearly quota remaining</span>
+                        </div>
+                        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Sick Leave (SL)</p>
+                            <h3 id="balSlRemaining" class="text-2xl font-extrabold text-slate-800 mt-2">15 / 15</h3>
+                            <span class="text-[11px] text-slate-400 block mt-1">Yearly quota remaining</span>
+                        </div>
+                        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Other Approved</p>
+                            <h3 id="balOtherCount" class="text-2xl font-extrabold text-slate-800 mt-2">0</h3>
+                            <span class="text-[11px] text-slate-400 block mt-1">Maternity/Special leaves</span>
+                        </div>
+                        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Days Taken</p>
+                            <h3 id="balTotalDays" class="text-2xl font-extrabold text-sky-600 mt-2">0 Days</h3>
+                            <span class="text-[11px] text-slate-400 block mt-1">Approved duration</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approval Queue Section (For Team Leaders & Managers) -->
+                <div id="approvalSection" class="hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h2 id="approvalQueueTitle" class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-inbox text-amber-600"></i> Team Requests Approval Queue
+                        </h2>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                            <input type="text" id="filterQueueName" oninput="renderUserDashboard()" placeholder="Search applicant name..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-400 uppercase text-[11px] font-bold tracking-wider border-b border-slate-100">
+                                        <th class="px-4 sm:px-6 py-3.5">SL</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Applicant Name</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Type</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Duration</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Reason</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Status</th>
+                                        <th class="px-4 sm:px-6 py-3.5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="approvalTableBody" class="divide-y divide-slate-100">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decision Stats & History (For Team Leaders & Managers) -->
+                <div id="decisionStatsSection" class="hidden space-y-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-sky-600"></i> Approval Decisions Overview
+                    </h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Approved</span>
+                            <h4 id="statMyApproved" class="text-xl font-extrabold text-emerald-600 mt-1">0</h4>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Rejected</span>
+                            <h4 id="statMyRejected" class="text-xl font-extrabold text-rose-600 mt-1">0</h4>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Total Processed</span>
+                            <h4 id="statMyProcessed" class="text-xl font-extrabold text-slate-800 mt-1">0</h4>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-100 shadow-sm text-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Pending Queue</span>
+                            <h4 id="statMyPendingQueue" class="text-xl font-extrabold text-amber-600 mt-1">0</h4>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-sky-600"></i> Team History Log</h3>
+                            <div class="flex items-center gap-3 w-full sm:w-auto">
+                                <input type="text" id="filterHistoryName" oninput="renderUserDashboard()" placeholder="Search name..." class="bg-slate-50 border border-slate-200 text-xs px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 w-full sm:w-48">
+                                <select id="historyYearFilter" onchange="renderUserDashboard()" class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-400 uppercase text-[11px] font-bold tracking-wider border-b border-slate-100">
+                                        <th class="px-4 sm:px-6 py-3.5">SL</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Applicant Name</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Type</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Duration</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Reason</th>
+                                        <th class="px-4 sm:px-6 py-3.5">Decision Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody" class="divide-y divide-slate-100">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Leave Applications History Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-sky-600"></i> My Leave History & Passes
+                        </h2>
+                        <select id="myHistoryYearFilter" onchange="renderUserDashboard()" class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-400 uppercase text-[11px] font-bold tracking-wider border-b border-slate-100">
+                                    <th class="px-4 sm:px-6 py-3.5">SL</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Type</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Start Date</th>
+                                    <th class="px-4 sm:px-6 py-3.5">End Date</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Total Days</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Reason</th>
+                                    <th class="px-4 sm:px-6 py-3.5">Status</th>
+                                    <th class="px-4 sm:px-6 py-3.5 text-right">Pass / QR</th>
+                                </tr>
+                            </thead>
+                            <tbody id="myLeavesTableBody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+            <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+                &copy; 2026 Chevron Lines (C & F) Ltd. All rights reserved. Secure Cloud Leave Management System.
+            </div>
+        </footer>
+    </div>
+
+    <!-- ================= MODAL: EDIT EMPLOYEE ================= -->
+    <div id="editEmployeeModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-user-pen text-sky-600"></i> Edit Employee Account
+                </h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="editEmployeeForm" onsubmit="handleUpdateEmployee(event)" class="space-y-4">
+                <input type="hidden" id="editEmpId">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Full Name</label>
+                    <input type="text" id="editEmpName" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Login ID</label>
+                        <input type="text" id="editEmpLoginId" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">New Password (Optional)</label>
+                        <input type="text" id="editEmpPassword" placeholder="Leave blank to keep current" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Mobile Number</label>
+                        <input type="text" id="editEmpMobile" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Role</label>
+                        <select id="editEmpRole" onchange="toggleEditTLDropdown()" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            <option value="Employee">Employee</option>
+                            <option value="TeamLeader">Team Leader</option>
+                            <option value="Manager">Manager</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="editTlSelectWrapper">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Reports To (Team Leader)</label>
+                    <select id="editEmpAssignedTL" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="None">None / Direct</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeEditModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-sm transition">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl text-sm shadow-md transition">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: APPLY FOR LEAVE ================= -->
+    <div id="applyModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-sky-600"></i> New Leave Application
+                </h3>
+                <button onclick="closeApplyModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="leaveApplicationForm" onsubmit="handleLeaveSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Leave Category</label>
+                    <select id="appLeaveType" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="Casual Leave (CL)">Casual Leave (CL)</option>
+                        <option value="Sick Leave (SL)">Sick Leave (SL)</option>
+                        <option value="Maternity Leave">Maternity Leave</option>
+                        <option value="Unpaid Leave">Unpaid Leave</option>
+                        <option value="Emergency Leave">Emergency Leave</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Start Date</label>
+                        <input type="date" id="appStartDate" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">End Date</label>
+                        <input type="date" id="appEndDate" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Reason for Leave</label>
+                    <textarea id="appReason" required rows="3" placeholder="Provide clear reason..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeApplyModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-sm transition">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl text-sm shadow-md transition">Submit Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: PRINT QR PASS ================= -->
+    <div id="printReceiptModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 sm:p-8 border border-slate-100 text-center">
+            <div class="bg-sky-50 text-sky-600 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-lg"><i class="fa-solid fa-qrcode"></i></div>
+            <h3 class="text-lg font-bold text-slate-900">Approved Leave Pass</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Chevron Lines (C & F) Ltd. Aziz Court (5th Floor) 88-90, Agrabad C/A, Chittagong.</p>
+
+            <div id="receiptContent" class="my-6 text-left">
+                <!-- Receipt details populated dynamically -->
+            </div>
+
+            <div class="flex justify-center mb-6">
+                <div id="qrcode" class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm inline-block"></div>
+            </div>
+
+            <div class="flex justify-center space-x-3">
+                <button type="button" onclick="closePrintModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl text-sm transition">Close</button>
+                <button type="button" onclick="window.print()" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl text-sm shadow-md transition flex items-center gap-2"><i class="fa-solid fa-print"></i> Print Pass</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODAL: INCOMING PENDING REQUEST POPUP ================= -->
+    <div id="incomingRequestModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-8 border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-amber-100 text-amber-700 w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-bell"></i></div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">New Leave Request Alert</h3>
+                        <p class="text-xs text-slate-500">Review and action the incoming request below</p>
+                    </div>
+                </div>
+                <button onclick="closeIncomingModal()" class="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="incomingModalBody" class="space-y-4 my-4 max-h-[50vh] overflow-y-auto pr-1">
+                <!-- Dynamically populated pending requests -->
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeIncomingModal()" class="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">Close & View Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ENGINE ================= -->
+    <script>
+        // ================= SUPABASE CONFIGURATION =================
+        const SUPABASE_URL = 'https://vhlzalgatarrrobjympc.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobHphbGdhdGFycnJvYmp5bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODI3ODksImV4cCI6MjA5MTU1ODc4OX0.DngGAcPst8pUwcz4NpuXEYdEk70BQoqOjXS78bAv8FU';
+        
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const STORAGE_SESSION = 'secure_lms_session_v5';
+        const STORAGE_SHOWN_PREFIX = 'lms_popup_shown_req_';
+
+        let employees = [];
+        let leaves = [];
+        let currentSession = JSON.parse(localStorage.getItem(STORAGE_SESSION)) || null;
+
+        // Fetch all data from Supabase on startup
+        async function fetchSupabaseData() {
+            try {
+                const { data: empData, error: empError } = await _supabase.from('employees').select('*');
+                if (empError) throw empError;
+                employees = empData || [];
+
+                const { data: leaveData, error: leaveError } = await _supabase.from('leaves').select('*');
+                if (leaveError) throw leaveError;
+                // Map snake_case database columns to camelCase JS properties used in UI
+                leaves = (leaveData || []).map(l => ({
+                    id: l.id,
+                    applicantId: l.applicant_id,
+                    applicantName: l.applicant_name,
+                    applicantTL: l.applicant_tl,
+                    type: l.type,
+                    start: l.start_date,
+                    end: l.end_date,
+                    reason: l.reason,
+                    status: l.status,
+                    approver: l.approver,
+                    approverRole: l.approver_role
+                }));
+            } catch (err) {
+                console.error("Database connection error:", err.message);
+                showToast("Failed to sync with Supabase database.", "error");
+            }
+        }
+
+        function saveDataLocally() {
+            localStorage.setItem(STORAGE_SESSION, JSON.stringify(currentSession));
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-emerald-500 mr-3 text-lg shrink-0"></i>' : '<i class="fa-solid fa-triangle-exclamation text-rose-500 mr-3 text-lg shrink-0"></i>';
+            const border = type === 'success' ? 'border-emerald-200' : 'border-rose-200';
+            
+            toast.className = `toast-enter bg-white border ${border} shadow-lg rounded-xl p-4 flex items-center min-w-[250px] mb-2 z-50`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium text-slate-700">${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function formatToDDMMYYYY(htmlDateString) {
+            if (!htmlDateString) return "";
+            const parts = htmlDateString.split('-');
+            if (parts.length !== 3) return htmlDateString;
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+
+        function calculateDays(startDateStr, endDateStr) {
+            const p1 = startDateStr.split('-');
+            const p2 = endDateStr.split('-');
+            if (p1.length !== 3 || p2.length !== 3) return 1;
+            const d1 = new Date(`${p1[2]}-${p1[1]}-${p1[0]}`);
+            const d2 = new Date(`${p2[2]}-${p2[1]}-${p2[0]}`);
+            const diffTime = Math.abs(d2 - d1);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return isNaN(diffDays) ? 1 : diffDays;
+        }
+
+        function getYearFromDate(dateStr) {
+            const parts = dateStr.split('-');
+            return parts.length === 3 ? parts[2] : '2026';
+        }
+
+        // --- Authentication Engine ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const idInput = document.getElementById("loginId").value.trim();
+            const passInput = document.getElementById("loginPassword").value.trim();
+
+            if (idInput.toLowerCase() === 'admin' && passInput === '123') {
+                currentSession = { type: 'ADMIN', name: 'System Administrator', role: 'Admin' };
+                saveDataLocally();
+                document.getElementById("loginForm").reset();
+                initApp();
+                showToast("Logged in successfully as Administrator");
+                return;
+            }
+
+            const foundEmp = employees.find(e => e.login_id === idInput && e.password === passInput);
+            if (foundEmp) {
+                currentSession = { 
+                    type: 'EMPLOYEE', 
+                    id: foundEmp.id,
+                    name: foundEmp.name,
+                    loginId: foundEmp.login_id,
+                    mobile: foundEmp.mobile,
+                    role: foundEmp.role,
+                    tl: foundEmp.tl
+                };
+                saveDataLocally();
+                document.getElementById("loginForm").reset();
+                initApp();
+                showToast(`Welcome back, ${foundEmp.name}`);
+                return;
+            }
+
+            showToast("Invalid Login ID or Password", "error");
+        }
+
+        function handleLogout() {
+            currentSession = null;
+            localStorage.removeItem(STORAGE_SESSION);
+            initApp();
+            showToast("Logged out securely");
+        }
+
+        async function initApp() {
+            await fetchSupabaseData();
+            const authScreen = document.getElementById("authScreen");
+            const appContainer = document.getElementById("appContainer");
+
+            if (!currentSession) {
+                authScreen.classList.remove("hidden");
+                appContainer.classList.add("hidden");
+                return;
+            }
+
+            authScreen.classList.add("hidden");
+            appContainer.classList.remove("hidden");
+
+            document.getElementById("loggedInUserDisplay").textContent = `${currentSession.name}`;
+
+            if (currentSession.type === 'ADMIN') {
+                document.getElementById("viewAdmin").classList.remove("hidden");
+                document.getElementById("viewUserPortal").classList.add("hidden");
+                renderAdminDashboard();
+            } else {
+                document.getElementById("viewAdmin").classList.add("hidden");
+                document.getElementById("viewUserPortal").classList.remove("hidden");
+                renderUserDashboard();
+                checkAndShowIncomingRequestsPopup();
+            }
+        }
+
+        // --- Incoming Requests Popup Logic for TL & Manager ---
+        function checkAndShowIncomingRequestsPopup() {
+            if (currentSession.role === 'Employee') return;
+
+            let pendingQueue = [];
+            if (currentSession.role === 'TeamLeader') {
+                pendingQueue = leaves.filter(l => l.applicantTL === currentSession.name && l.status === 'Pending TL Review');
+            } else if (currentSession.role === 'Manager') {
+                pendingQueue = leaves.filter(l => l.status === 'Pending Manager Review');
+            }
+
+            // Filter out requests that have already triggered the popup for this user
+            const freshQueue = pendingQueue.filter(l => !localStorage.getItem(STORAGE_SHOWN_PREFIX + currentSession.id + '_' + l.id));
+
+            if (freshQueue.length === 0) return;
+
+            const modalBody = document.getElementById("incomingModalBody");
+            modalBody.innerHTML = "";
+
+            freshQueue.forEach(leave => {
+                // Mark this request as shown so it never shows in popup again
+                localStorage.setItem(STORAGE_SHOWN_PREFIX + currentSession.id + '_' + leave.id, 'true');
+
+                const days = calculateDays(leave.start, leave.end);
+                let actionBtns = "";
+
+                if (currentSession.role === 'TeamLeader') {
+                    actionBtns = `
+                        <button onclick="updateStatusFromPopup(${leave.id}, 'Pending Manager Review')" class="bg-sky-600 hover:bg-sky-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">Forward</button>
+                        <button onclick="updateStatusFromPopup(${leave.id}, 'Rejected')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">Reject</button>
+                    `;
+                } else if (currentSession.role === 'Manager') {
+                    actionBtns = `
+                        <button onclick="updateStatusFromPopup(${leave.id}, 'Approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">Approve</button>
+                        <button onclick="updateStatusFromPopup(${leave.id}, 'Rejected')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition">Reject</button>
+                    `;
+                }
+
+                modalBody.innerHTML += `
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2.5">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs font-bold text-sky-700 uppercase tracking-wider block">${leave.type}</span>
+                                <h4 class="font-bold text-slate-800 text-sm mt-0.5">${leave.applicantName}</h4>
+                            </div>
+                            <span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded text-[11px] font-bold">${days} Days</span>
+                        </div>
+                        <div class="text-xs text-slate-600 space-y-1">
+                            <div class="flex justify-between"><span class="text-slate-400">Duration:</span> <span class="font-medium">${leave.start} to ${leave.end}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Reason:</span> <span class="font-medium truncate max-w-[220px]" title="${leave.reason}">${leave.reason}</span></div>
+                        </div>
+                        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200/60">
+                            ${actionBtns}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById("incomingRequestModal").classList.remove("hidden");
+        }
+
+        function closeIncomingModal() {
+            document.getElementById("incomingRequestModal").classList.add("hidden");
+        }
+
+        async function updateStatusFromPopup(leaveId, newStatus) {
+            await updateStatus(leaveId, newStatus);
+            // Refresh popup modal contents to check if any other fresh unshown requests remain
+            closeIncomingModal();
+            checkAndShowIncomingRequestsPopup();
+        }
+
+        function toggleTLDropdown() {
+            const role = document.getElementById("empRole").value;
+            const wrapper = document.getElementById("tlSelectWrapper");
+            if (role === 'Manager') {
+                wrapper.classList.add("hidden");
+            } else {
+                wrapper.classList.remove("hidden");
+            }
+        }
+
+        function toggleEditTLDropdown() {
+            const role = document.getElementById("editEmpRole").value;
+            const wrapper = document.getElementById("editTlSelectWrapper");
+            if (role === 'Manager') {
+                wrapper.classList.add("hidden");
+            } else {
+                wrapper.classList.remove("hidden");
+            }
+        }
+
+        // --- Admin Actions ---
+        async function handleRegisterEmployee(e) {
+            e.preventDefault();
+            const name = document.getElementById("empName").value.trim();
+            const loginId = document.getElementById("empLoginId").value.trim();
+            const password = document.getElementById("empPassword").value.trim();
+            const mobile = document.getElementById("empMobile").value.trim();
+            const role = document.getElementById("empRole").value;
+            const tl = role === 'Manager' ? 'None' : document.getElementById("empAssignedTL").value;
+
+            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id === loginId)) {
+                showToast("Error: Login ID already exists or is reserved.", "error");
+                return;
+            }
+
+            const { error } = await _supabase.from('employees').insert([{ name, login_id: loginId, password, mobile, role, tl }]);
+            
+            if (error) {
+                showToast("Error creating employee: " + error.message, "error");
+                return;
+            }
+
+            await fetchSupabaseData();
+            document.getElementById("addEmployeeForm").reset();
+            renderAdminDashboard();
+            showToast(`Secure credentials created for: ${name}`);
+        }
+
+        function openEditModal(empId) {
+            const emp = employees.find(e => e.id === empId);
+            if (!emp) return;
+
+            document.getElementById("editEmpId").value = emp.id;
+            document.getElementById("editEmpName").value = emp.name;
+            document.getElementById("editEmpLoginId").value = emp.login_id;
+            document.getElementById("editEmpPassword").value = ""; // Leave blank for optional password update
+            document.getElementById("editEmpMobile").value = emp.mobile;
+            document.getElementById("editEmpRole").value = emp.role;
+
+            const editTlSelect = document.getElementById("editEmpAssignedTL");
+            editTlSelect.innerHTML = '<option value="None">None / Direct</option>';
+            employees.filter(e => (e.role === 'TeamLeader' || e.role === 'Manager') && e.id !== emp.id).forEach(t => {
+                editTlSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.role})</option>`;
+            });
+
+            document.getElementById("editEmpAssignedTL").value = emp.tl || 'None';
+            toggleEditTLDropdown();
+            document.getElementById("editEmployeeModal").classList.remove("hidden");
+        }
+
+        function closeEditModal() {
+            document.getElementById("editEmployeeModal").classList.add("hidden");
+            document.getElementById("editEmployeeForm").reset();
+        }
+
+        async function handleUpdateEmployee(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById("editEmpId").value);
+            const name = document.getElementById("editEmpName").value.trim();
+            const loginId = document.getElementById("editEmpLoginId").value.trim();
+            const password = document.getElementById("editEmpPassword").value.trim();
+            const mobile = document.getElementById("editEmpMobile").value.trim();
+            const role = document.getElementById("editEmpRole").value;
+            const tl = role === 'Manager' ? 'None' : document.getElementById("editEmpAssignedTL").value;
+
+            // Check duplicate login ID except current user
+            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id === loginId && e.id !== id)) {
+                showToast("Error: Login ID already exists or is reserved.", "error");
+                return;
+            }
+
+            let updatePayload = { name, login_id: loginId, mobile, role, tl };
+            if (password) {
+                updatePayload.password = password; // Only update password if provided
+            }
+
+            const { error } = await _supabase.from('employees').update(updatePayload).eq('id', id);
+            if (error) {
+                showToast("Error updating employee: " + error.message, "error");
+                return;
+            }
+
+            await fetchSupabaseData();
+            closeEditModal();
+            renderAdminDashboard();
+            showToast(`Employee profile updated successfully for: ${name}`);
+        }
+
+        async function deleteEmployee(id) {
+            if(confirm("Are you sure you want to delete this employee account?")) {
+                const { error } = await _supabase.from('employees').delete().eq('id', id);
+                if (error) {
+                    showToast("Error deleting employee", "error");
+                    return;
+                }
+                await fetchSupabaseData();
+                renderAdminDashboard();
+                showToast("Employee account deleted", "error");
+            }
+        }
+
+        function renderAdminDashboard() {
+            document.getElementById("statTotalEmp").textContent = employees.length;
+            document.getElementById("statPending").textContent = leaves.filter(l => l.status.includes("Pending")).length;
+            document.getElementById("statApproved").textContent = leaves.filter(l => l.status === "Approved").length;
+
+            const tbody = document.getElementById("adminEmployeeTableBody");
+            if (employees.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300 block"></i> No employees registered yet.</td></tr>`;
+            } else {
+                tbody.innerHTML = "";
+                employees.forEach((emp, index) => {
+                    const roleBadge = emp.role === 'Manager' ? 'bg-indigo-50 text-indigo-700' : (emp.role === 'TeamLeader' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700');
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-sky-50/45 transition">
+                            <td class="px-4 sm:px-6 py-4 font-medium text-slate-600">${index + 1}</td>
+                            <td class="px-4 sm:px-6 py-4 font-semibold text-slate-800">${emp.name}</td>
+                            <td class="px-4 sm:px-6 py-4 font-mono text-sky-700 bg-sky-50/60 rounded px-2 py-1">${emp.login_id}</td>
+                            <td class="px-4 sm:px-6 py-4 text-slate-600">${emp.mobile}</td>
+                            <td class="px-4 sm:px-6 py-4"><span class="px-2.5 py-1 rounded-md text-xs font-bold ${roleBadge}">${emp.role}</span></td>
+                            <td class="px-4 sm:px-6 py-4 text-slate-600">${emp.tl}</td>
+                            <td class="px-4 sm:px-6 py-4 text-right space-x-1">
+                                <button onclick="openEditModal(${emp.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition" title="Edit Employee / Change Password"><i class="fa-solid fa-user-pen"></i></button>
+                                <button onclick="deleteEmployee(${emp.id})" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Delete Account"><i class="fa-solid fa-trash-can"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const tlSelect = document.getElementById("empAssignedTL");
+            tlSelect.innerHTML = '<option value="None">None / Direct</option>';
+            employees.filter(e => e.role === 'TeamLeader' || e.role === 'Manager').forEach(t => {
+                tlSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.role})</option>`;
+            });
+        }
+
+        // --- User Portal & Analytics Dashboard ---
+        function renderUserDashboard() {
+            document.getElementById("welcomeName").textContent = `Welcome, ${currentSession.name}`;
+            document.getElementById("welcomeRole").textContent = `Reports To: ${currentSession.tl || 'None'}`;
+
+            const selectedYear = document.getElementById("dashboardYearFilter").value;
+            const myHistoryYear = document.getElementById("myHistoryYearFilter").value;
+            const historyYear = document.getElementById("historyYearFilter").value;
+
+            const myLeavesYear = leaves.filter(l => l.applicantId === currentSession.id && getYearFromDate(l.start) === selectedYear && l.status === 'Approved');
+            
+            let usedCL = 0;
+            let usedSL = 0;
+            let countOther = 0;
+            let totalDaysTaken = 0;
+
+            myLeavesYear.forEach(l => {
+                const days = calculateDays(l.start, l.end);
+                totalDaysTaken += days;
+                if (l.type.includes('Casual')) usedCL += days;
+                else if (l.type.includes('Sick')) usedSL += days;
+                else countOther += 1;
+            });
+
+            const remainingCL = Math.max(0, 10 - usedCL);
+            const remainingSL = Math.max(0, 15 - usedSL);
+
+            document.getElementById("balClRemaining").textContent = `${remainingCL} / 10`;
+            document.getElementById("balSlRemaining").textContent = `${remainingSL} / 15`;
+            document.getElementById("balOtherCount").textContent = countOther;
+            document.getElementById("balTotalDays").textContent = totalDaysTaken;
+
+            // My Applications History Table
+            const myLeavesBody = document.getElementById("myLeavesTableBody");
+            const myAllLeaves = leaves.filter(l => l.applicantId === currentSession.id && getYearFromDate(l.start) === myHistoryYear);
+            
+            if (myAllLeaves.length === 0) {
+                myLeavesBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 italic">No leave applications found for ${myHistoryYear}.</td></tr>`;
+            } else {
+                myLeavesBody.innerHTML = "";
+                myAllLeaves.forEach((leave, index) => {
+                    const days = calculateDays(leave.start, leave.end);
+                    const printBtn = leave.status === 'Approved' 
+                        ? `<button onclick="openPrintModal(${leave.id})" class="bg-sky-100 hover:bg-sky-200 text-sky-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto shadow-sm"><i class="fa-solid fa-qrcode"></i> View Pass</button>`
+                        : `<span class="text-xs text-slate-400 italic">N/A</span>`;
+
+                    myLeavesBody.innerHTML += `
+                        <tr class="hover:bg-sky-50/30 transition">
+                            <td class="px-4 sm:px-6 py-4">${index + 1}</td>
+                            <td class="px-4 sm:px-6 py-4 font-semibold text-slate-800">${leave.type}</td>
+                            <td class="px-4 sm:px-6 py-4">${leave.start}</td>
+                            <td class="px-4 sm:px-6 py-4">${leave.end}</td>
+                            <td class="px-4 sm:px-6 py-4"><span class="bg-slate-100 text-slate-700 font-bold px-2.5 py-1 rounded text-xs">${days} Days</span></td>
+                            <td class="px-4 sm:px-6 py-4 text-slate-600 truncate max-w-[150px] sm:max-w-[200px]" title="${leave.reason}">${leave.reason}</td>
+                            <td class="px-4 sm:px-6 py-4">${getStatusBadge(leave.status)}</td>
+                            <td class="px-4 sm:px-6 py-4 text-right">${printBtn}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const approvalSection = document.getElementById("approvalSection");
+            const historyLogSection = document.getElementById("historyLogSection");
+            const decisionStatsSection = document.getElementById("decisionStatsSection");
+
+            if (currentSession.role === 'Employee') {
+                approvalSection.classList.add("hidden");
+                if(document.getElementById("historyLogSection")) document.getElementById("historyLogSection").classList.add("hidden");
+                decisionStatsSection.classList.add("hidden");
+            } else {
+                approvalSection.classList.remove("hidden");
+                if(document.getElementById("historyLogSection")) document.getElementById("historyLogSection").classList.remove("hidden");
+                decisionStatsSection.classList.remove("hidden");
+
+                const queueNameFilter = document.getElementById("filterQueueName").value.toLowerCase();
+                const historyNameFilter = document.getElementById("filterHistoryName").value.toLowerCase();
+
+                let queue = [];
+                if (currentSession.role === 'TeamLeader') {
+                    document.getElementById("approvalQueueTitle").innerHTML = '<i class="fa-solid fa-inbox mr-2 text-amber-600"></i>Team Requests (Pending TL Review)';
+                    queue = leaves.filter(l => l.applicantTL === currentSession.name && l.status === 'Pending TL Review');
+                } else if (currentSession.role === 'Manager') {
+                    document.getElementById("approvalQueueTitle").innerHTML = '<i class="fa-solid fa-inbox mr-2 text-sky-600"></i>Final Approvals (Pending Manager)';
+                    queue = leaves.filter(l => l.status === 'Pending Manager Review');
+                }
+
+                if (queueNameFilter) {
+                    queue = queue.filter(l => l.applicantName.toLowerCase().includes(queueNameFilter));
+                }
+
+                const approvalBody = document.getElementById("approvalTableBody");
+                if (queue.length === 0) {
+                    approvalBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-500 italic">No pending requests in your queue.</td></tr>`;
+                } else {
+                    approvalBody.innerHTML = "";
+                    queue.forEach((leave, index) => {
+                        let btnHtml = "";
+                        if (currentSession.role === 'TeamLeader') {
+                            btnHtml = `
+                                <button onclick="updateStatus(${leave.id}, 'Pending Manager Review')" class="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-sky-700 shadow-sm mr-2 transition">Forward</button>
+                                <button onclick="updateStatus(${leave.id}, 'Rejected')" class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-200 transition">Reject</button>
+                            `;
+                        } else if (currentSession.role === 'Manager') {
+                            btnHtml = `
+                                <button onclick="updateStatus(${leave.id}, 'Approved')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm mr-2 transition">Approve</button>
+                                <button onclick="updateStatus(${leave.id}, 'Rejected')" class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-200 transition">Reject</button>
+                            `;
+                        }
+
+                        approvalBody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 sm:px-6 py-4">${index + 1}</td>
+                                <td class="px-4 sm:px-6 py-4 font-semibold text-slate-800">${leave.applicantName}</td>
+                                <td class="px-4 sm:px-6 py-4">${leave.type}</td>
+                                <td class="px-4 sm:px-6 py-4 text-xs font-medium">${leave.start} <br>to<br> ${leave.end}</td>
+                                <td class="px-4 sm:px-6 py-4 text-slate-600 text-sm">${leave.reason}</td>
+                                <td class="px-4 sm:px-6 py-4">${getStatusBadge(leave.status)}</td>
+                                <td class="px-4 sm:px-6 py-4 text-right whitespace-nowrap">${btnHtml}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                let myDecisionsHistory = leaves.filter(l => {
+                    const isDecided = (l.status === 'Approved' || l.status === 'Rejected');
+                    const matchesYear = getYearFromDate(l.start) === historyYear;
+                    const isMyScope = currentSession.role === 'Manager' ? isDecided : (l.applicantTL === currentSession.name && isDecided);
+                    return isDecided && matchesYear && isMyScope;
+                });
+
+                const totalMyApproved = myDecisionsHistory.filter(l => l.status === 'Approved').length;
+                const totalMyRejected = myDecisionsHistory.filter(l => l.status === 'Rejected').length;
+                
+                document.getElementById("statMyApproved").textContent = totalMyApproved;
+                document.getElementById("statMyRejected").textContent = totalMyRejected;
+                document.getElementById("statMyProcessed").textContent = myDecisionsHistory.length;
+                document.getElementById("statMyPendingQueue").textContent = queue.length;
+
+                if (historyNameFilter) {
+                    myDecisionsHistory = myDecisionsHistory.filter(l => l.applicantName.toLowerCase().includes(historyNameFilter));
+                }
+
+                const historyBody = document.getElementById("historyTableBody");
+                if (myDecisionsHistory.length === 0) {
+                    historyBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500 italic">No historical decision records found for ${historyYear}.</td></tr>`;
+                } else {
+                    historyBody.innerHTML = "";
+                    myDecisionsHistory.forEach((leave, index) => {
+                        historyBody.innerHTML += `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 sm:px-6 py-4">${index + 1}</td>
+                                <td class="px-4 sm:px-6 py-4 font-semibold text-slate-800">${leave.applicantName}</td>
+                                <td class="px-4 sm:px-6 py-4">${leave.type}</td>
+                                <td class="px-4 sm:px-6 py-4 text-xs font-medium">${leave.start} to ${leave.end}</td>
+                                <td class="px-4 sm:px-6 py-4 text-slate-600 text-sm">${leave.reason}</td>
+                                <td class="px-4 sm:px-6 py-4">${getStatusBadge(leave.status)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'Approved') return `<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm">Approved</span>`;
+            if (status === 'Rejected') return `<span class="bg-rose-100 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm">Rejected</span>`;
+            return `<span class="bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm">${status}</span>`;
+        }
+
+        async function updateStatus(leaveId, newStatus) {
+            let updatePayload = { status: newStatus };
+            if (newStatus === 'Approved') {
+                updatePayload.approver = currentSession.name;
+                updatePayload.approver_role = currentSession.role;
+            }
+
+            const { error } = await _supabase.from('leaves').update(updatePayload).eq('id', leaveId);
+            if (error) {
+                showToast("Error updating request status", "error");
+                return;
+            }
+
+            await fetchSupabaseData();
+            renderUserDashboard();
+            showToast(`Request updated: ${newStatus}`);
+        }
+
+        // --- Print & QR Code Generation ---
+        function openPrintModal(leaveId) {
+            const leave = leaves.find(l => l.id === leaveId);
+            if (!leave) return;
+
+            const days = calculateDays(leave.start, leave.end);
+            const approverName = leave.approver || 'Authorized Management';
+
+            const receiptHtml = `
+                <div class="space-y-2 text-xs border border-slate-100 bg-slate-50/50 p-4 rounded-xl">
+                    <div class="flex justify-between"><span class="font-semibold text-slate-500">Applicant Name:</span> <span class="font-bold text-slate-800">${leave.applicantName}</span></div>
+                    <div class="flex justify-between"><span class="font-semibold text-slate-500">Leave Category:</span> <span class="font-bold text-slate-800">${leave.type}</span></div>
+                    <div class="flex justify-between"><span class="font-semibold text-slate-500">Duration:</span> <span class="font-bold text-slate-800">${leave.start} to ${leave.end}</span></div>
+                    <div class="flex justify-between"><span class="font-semibold text-slate-500">Total Days:</span> <span class="font-bold text-slate-800">${days} Days</span></div>
+                    <div class="flex justify-between"><span class="font-semibold text-slate-500">Reason:</span> <span class="font-medium text-slate-700">${leave.reason}</span></div>
+                    <div class="flex justify-between pt-2 border-t border-slate-200"><span class="font-semibold text-sky-700">Authorized By:</span> <span class="font-bold text-sky-900">${approverName}</span></div>
+                </div>
+            `;
+            document.getElementById("receiptContent").innerHTML = receiptHtml;
+
+            document.getElementById("qrcode").innerHTML = "";
+            const qrData = `CHEVRON LINES LEAVE PASS\nName: ${leave.applicantName}\nType: ${leave.type}\nFrom: ${leave.start}\nTo: ${leave.end} (${days}d)\nStatus: APPROVED\nApprover: ${approverName}\nID: ${leave.id}`;
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrData,
+                width: 130,
+                height: 130,
+                colorDark: "#0369a1",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+
+            document.getElementById("printReceiptModal").classList.remove("hidden");
+        }
+
+        function closePrintModal() {
+            document.getElementById("printReceiptModal").classList.add("hidden");
+        }
+
+        // --- Leave Application Modal ---
+        function openApplyModal() {
+            document.getElementById("applyModal").classList.remove("hidden");
+        }
+
+        function closeApplyModal() {
+            document.getElementById("applyModal").classList.add("hidden");
+            document.getElementById("leaveApplicationForm").reset();
+        }
+
+        async function handleLeaveSubmit(e) {
+            e.preventDefault();
+            const rawStart = document.getElementById("appStartDate").value;
+            const rawEnd = document.getElementById("appEndDate").value;
+            
+            if(rawEnd < rawStart) {
+                showToast("Error: End Date cannot be before Start Date", "error");
+                return;
+            }
+
+            const leaveType = document.getElementById("appLeaveType").value;
+            const formattedStart = formatToDDMMYYYY(rawStart);
+            const formattedEnd = formatToDDMMYYYY(rawEnd);
+            const selectedYear = getYearFromDate(formattedStart);
+
+            if (leaveType.includes('Casual') || leaveType.includes('Sick')) {
+                const daysRequested = calculateDays(formattedStart, formattedEnd);
+                const myApprovedYear = leaves.filter(l => l.applicantId === currentSession.id && getYearFromDate(l.start) === selectedYear && l.status === 'Approved' && l.type === leaveType);
+                let currentUsed = 0;
+                myApprovedYear.forEach(l => currentUsed += calculateDays(l.start, l.end));
+
+                const limit = leaveType.includes('Casual') ? 10 : 15;
+                if (currentUsed + daysRequested > limit) {
+                    showToast(`Error: Exceeds yearly limit for ${leaveType}. Remaining: ${Math.max(0, limit - currentUsed)} days.`, "error");
+                    return;
+                }
+            }
+
+            let initStatus = 'Pending TL Review';
+            let approverName = null;
+            let approverRole = null;
+
+            if (currentSession.role === 'TeamLeader' || currentSession.tl === 'None') initStatus = 'Pending Manager Review';
+            if (currentSession.role === 'Manager') {
+                initStatus = 'Approved';
+                approverName = currentSession.name;
+                approverRole = 'Manager';
+            }
+
+            const newLeavePayload = {
+                applicant_id: currentSession.id,
+                applicant_name: currentSession.name,
+                applicant_tl: currentSession.tl,
+                type: leaveType,
+                start_date: formattedStart,
+                end_date: formattedEnd,
+                reason: document.getElementById("appReason").value.trim(),
+                status: initStatus,
+                approver: approverName,
+                approver_role: approverRole
+            };
+
+            const { error } = await _supabase.from('leaves').insert([newLeavePayload]);
+            if (error) {
+                showToast("Error submitting leave request: " + error.message, "error");
+                return;
+            }
+
+            await fetchSupabaseData();
+            closeApplyModal();
+            renderUserDashboard();
+            showToast("Leave request submitted successfully");
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
