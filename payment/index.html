@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .print-only-summary {
+            display: none;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+            .no-print { display: none !important; }
+            .print-only-summary { display: grid !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-12 pt-6">
+
+    <div id="lockScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 text-center space-y-6">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-xs">
+                🔒
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">সিস্টেম লকড (Locked)</h2>
+                <p class="text-xs text-slate-400 mt-1">ড্যাশবোর্ডে প্রবেশ করতে সঠিক পাসওয়ার্ড লিখুন</p>
+            </div>
+            <form id="lockForm" class="space-y-4">
+                <div>
+                    <input type="password" id="sysPassword" required placeholder="পাসওয়ার্ড লিখুন" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-center text-lg font-bold tracking-widest focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    <span id="loginError" class="text-xs text-rose-500 font-medium mt-1.5 hidden block">❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।</span>
+                </div>
+                <button type="submit" id="loginSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-all shadow-md cursor-pointer">
+                    ড্যাশবোর্ড আনলক করুন
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainDashboard" class="max-w-7xl mx-auto px-4 sm:px-6 hidden">
+        <div class="flex justify-end items-center mb-6 no-print">
+            <button id="logoutBtn" class="bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-xs transition-all duration-200 cursor-pointer">
+                🚪 লগআউট (Logout)
+            </button>
+        </div>
+
+        <div id="duplicateWarning" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 text-amber-900 p-4 rounded-xl shadow-xs flex items-start gap-3" role="alert">
+            <span class="text-xl">⚠️</span>
+            <div>
+                <p class="font-bold">সতর্কতা বার্তা!</p>
+                <p class="text-sm">এই জব নম্বরটি (<span id="warnJobNo" class="font-bold underline"></span>) ইতিমধ্যে অন্য একটি তারিখে এন্ট্রি করা হয়েছে।</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between group hover:border-blue-400 transition-all duration-300">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">মোট ব্যাংক ডিপোজিট</p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">৳ <span id="totalDepositDisplay">0.00</span></p>
+                </div>
+                <div class="bg-blue-50 text-blue-600 p-3 rounded-xl font-bold text-xl group-hover:scale-110 transition-transform">🏦</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between group hover:border-rose-400 transition-all duration-300">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">কেটে নেওয়া হয়েছে</p>
+                    <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">৳ <span id="totalExpenseDisplay">0.00</span></p>
+                </div>
+                <div class="bg-rose-50 text-rose-600 p-3 rounded-xl font-bold text-xl group-hover:scale-110 transition-transform">📉</div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between group hover:border-amber-500 transition-all duration-300">
+                <div>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">টোটাল বুকড (Booked)</p>
+                    <p class="text-xl sm:text-2xl font-bold text-amber-600 mt-1">৳ <span id="totalBookedDisplay">0.00</span></p>
+                </div>
+                <div class="bg-amber-50 text-amber-600 p-3 rounded-xl font-bold text-xl group-hover:scale-110 transition-transform">⏳</div>
+            </div>
+            <div class="bg-emerald-600 text-white p-5 rounded-2xl shadow-md flex items-center justify-between group hover:bg-emerald-700 transition-all duration-300">
+                <div>
+                    <p class="text-xs font-medium text-emerald-100 uppercase tracking-wider">ব্যালেন্স</p>
+                    <p class="text-2xl sm:text-3xl font-extrabold mt-1">৳ <span id="currentBalanceDisplay">0.00</span></p>
+                </div>
+                <div class="bg-emerald-500/50 text-white p-3 rounded-xl font-bold text-xl group-hover:scale-110 transition-transform">💰</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            
+            <div class="space-y-6 no-print">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+                    <h2 id="expenseFormTitle" class="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="bg-blue-100 text-blue-700 p-1.5 rounded-lg text-sm">📝</span> নতুন খরচ এন্ট্রি
+                    </h2>
+                    <form id="expenseForm" class="space-y-4">
+                        <input type="hidden" id="editExpenseId" value="">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">তারিখ</label>
+                            <input type="date" id="inputDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">জব নম্বর (Job No)</label>
+                            <input type="text" id="jobNo" required placeholder="Ex: 1234/26" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all">
+                            <span id="autoFillStatus" class="text-xs mt-1.5 block hidden"></span>
+                        </div>
+                        <button type="submit" id="expenseSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer">ডেটা সেভ করুন</button>
+                    </form>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200">
+                    <h2 id="depositFormTitle" class="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg text-sm">🏦</span> ব্যাংক ডিপোজিট (টাকা জমা)
+                    </h2>
+                    <form id="depositForm" class="space-y-3">
+                        <input type="hidden" id="editDepositId" value="">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ডিপোজিট তারিখ</label>
+                            <input type="date" id="depositDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ডিপোজিট পরিমাণ (৳)</label>
+                            <input type="number" step="any" id="depositAmount" required min="1" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm transition-all">
+                        </div>
+                        <button type="submit" id="depositSubmitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-all shadow-xs cursor-pointer">টাকা জমা করুন</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6 w-full overflow-hidden">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-slate-200 no-print">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1">🔍 তারিখ ফিল্টার (From - To)</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1 font-medium">From (শুরু)</label>
+                            <input type="date" id="filterFromDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-500 mb-1 font-medium">To (শেষ)</label>
+                            <input type="date" id="filterToDate" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 outline-none text-sm focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="clearFilterBtn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer text-center">
+                            রিসেট
+                        </button>
+                        <button onclick="window.print()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                            🖨️ প্রিন্ট
+                        </button>
+                    </div>
+                </div>
+
+                <div id="printArea" class="bg-white p-4 sm:p-6 rounded-2xl shadow-xs border border-slate-200">
+                    <div class="mb-4 flex justify-between items-center flex-wrap gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-800">ব্যয় বিবরণী রিপোর্ট</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">সময়কাল: <span id="tableTitleDate" class="font-semibold text-slate-700">সব</span></p>
+                        </div>
+                        <span class="text-xs font-semibold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-100">
+                            মোট রেকর্ড: <span id="totalEntries">০</span>টি
+                        </span>
+                    </div>
+
+                    <div class="print-only-summary grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl mb-4 border border-slate-200 text-xs sm:text-sm font-medium">
+                        <div class="text-left text-slate-700">
+                            💰 অবশিষ্ট ব্যালেন্স: <span class="font-bold text-emerald-600">৳ <span id="printBalanceField">0.00</span></span>
+                        </div>
+                        <div class="text-right text-slate-700">
+                            📅 শেষ ডিপোজিট তারিখ: <span id="printLastDepositField" class="font-bold text-blue-600">নাই</span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto w-full border border-slate-100 rounded-xl shadow-xs">
+                        <table class="w-full text-left border-collapse min-w-[650px]">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                                    <th class="p-3 text-center w-12">SL</th>
+                                    <th class="p-3">তারিখ</th>
+                                    <th class="p-3">জব নম্বর</th>
+                                    <th class="p-3">BoE নম্বর</th>
+                                    <th class="p-3">ইম্পোর্টার</th>
+                                    <th class="p-3 text-right">ডিউটি পরিমাণ (৳)</th>
+                                    <th class="p-3 text-center w-24">অবস্থা</th>
+                                    <th class="p-3 text-center no-print w-24">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody" class="text-xs sm:text-sm divide-y divide-slate-100 text-slate-700"></tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50/80 font-bold border-t-2 border-slate-200 text-slate-800 text-xs sm:text-sm">
+                                    <td colspan="5" class="p-3 text-right text-slate-500 font-medium">সর্বমোট হিসাব (Grand Total):</td>
+                                    <td id="grandTotal" class="p-3 text-right text-emerald-600 font-bold bg-emerald-50/50">0.00</td>
+                                    <td colspan="2" class="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 no-print">
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center gap-2">
+                        <span>📋</span> ব্যাংক ডিপোজিট লগ (History)
+                    </h2>
+                    <div class="overflow-x-auto w-full border border-slate-100 rounded-xl">
+                        <table class="w-full text-left border-collapse min-w-[400px]">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs uppercase font-semibold">
+                                    <th class="p-2.5 text-center w-12">SL</th>
+                                    <th class="p-2.5">তারিখ</th>
+                                    <th class="p-2.5 text-right">পরিমাণ (৳)</th>
+                                    <th class="p-2.5 text-center w-24">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="depositTableBody" class="text-xs sm:text-sm divide-y divide-slate-100 text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lockScreen = document.getElementById('lockScreen');
+        const mainDashboard = document.getElementById('mainDashboard');
+        const lockForm = document.getElementById('lockForm');
+        const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const sysPasswordInput = document.getElementById('sysPassword');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+        const SUPABASE_URL = "https://vhlzalgatarrrobjympc.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZobHphbGdhdGFycnJvYmp5bXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODI3ODksImV4cCI6MjA5MTU1ODc4OX0.DngGAcPst8pUwcz4NpuXEYdEk70BQoqOjXS78bAv8FU";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let expenses = [];
+        let deposits = [];
+        let activeCloudJob = null;
+
+        lockForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (sysPasswordInput.value === "123") {
+                loginSubmitBtn.innerText = "⏳ ক্লাউড সিঙ্ক ও ডেটা লোড হচ্ছে...";
+                loginSubmitBtn.disabled = true;
+
+                await fetchExpensesFromCloud();
+                await fetchDepositsFromCloud();
+
+                lockScreen.classList.add('hidden');
+                mainDashboard.classList.remove('hidden');
+                loginError.classList.add('hidden');
+                
+                loginSubmitBtn.innerText = "ড্যাশবোর্ড আনলক করুন";
+                loginSubmitBtn.disabled = false;
+                renderDashboard(); 
+            } else {
+                loginError.classList.remove('hidden');
+                sysPasswordInput.value = '';
+                sysPasswordInput.focus();
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            mainDashboard.classList.add('hidden');
+            lockScreen.classList.remove('hidden');
+            sysPasswordInput.value = ''; 
+            sysPasswordInput.focus();   
+        });
+
+        function convertToBanglaNumber(str) {
+            const banglaDigits = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+            return String(str).replace(/[0-9]/g, w => banglaDigits[w]);
+        }
+
+        function formatCurrencyWithCommas(amount) {
+            return parseFloat(amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatDateToDMY(dateString) {
+            if (!dateString) return '';
+            const [year, month, day] = dateString.split('-');
+            return `${day}-${month}-${year}`;
+        }
+
+        function formatDateToBanglaDMY(dateString) {
+            if (!dateString) return '';
+            return convertToBanglaNumber(formatDateToDMY(dateString));
+        }
+
+        function getTodayDateString() {
+            const today = new Date();
+            return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+        
+        const todayStr = getTodayDateString();
+        document.getElementById('inputDate').value = todayStr;
+        document.getElementById('depositDate').value = todayStr; 
+
+        const expenseForm = document.getElementById('expenseForm');
+        const depositForm = document.getElementById('depositForm');
+        const jobNoInput = document.getElementById('jobNo');
+        const duplicateWarning = document.getElementById('duplicateWarning');
+        const warnJobNo = document.getElementById('warnJobNo');
+        
+        // Updated filter elements
+        const filterFromDateInput = document.getElementById('filterFromDate');
+        const filterToDateInput = document.getElementById('filterToDate');
+        const clearFilterBtn = document.getElementById('clearFilterBtn');
+        const autoFillStatus = document.getElementById('autoFillStatus');
+
+        async function fetchExpensesFromCloud() {
+            try {
+                const { data, error } = await _supabase
+                    .from('user_expenses')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+                expenses = data || [];
+            } catch (err) {
+                console.error("খরচ ডেটা আনতে ত্রুটি:", err);
+            }
+        }
+
+        async function fetchDepositsFromCloud() {
+            try {
+                const { data, error } = await _supabase
+                    .from('bank_deposits')
+                    .select('id, amount, deposit_date')
+                    .order('deposit_date', { ascending: true });
+
+                if (error) throw error;
+                deposits = data.map(item => ({
+                    id: item.id,
+                    amount: parseFloat(item.amount) || 0,
+                    date: item.deposit_date
+                })) || [];
+            } catch (err) {
+                console.error("ডিপোজিট ডেটা আনতে ত্রুটি:", err);
+            }
+        }
+
+        let typingTimer;
+        jobNoInput.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            const val = jobNoInput.value.trim();
+            if(val) {
+                typingTimer = setTimeout(() => validateAndFetchJob(val), 500);
+            } else {
+                autoFillStatus.classList.add('hidden');
+                duplicateWarning.classList.add('hidden');
+                activeCloudJob = null;
+            }
+        });
+
+        async function validateAndFetchJob(jobNumber) {
+            autoFillStatus.classList.remove('hidden');
+            autoFillStatus.className = "text-xs text-blue-600 mt-1.5 font-medium block";
+            autoFillStatus.innerText = "🔍 মাস্টার ডাটাবেজে চেক করা হচ্ছে...";
+
+            const isDuplicate = expenses.some(item => item.job_no.toLowerCase() === jobNumber.toLowerCase());
+            if (isDuplicate) {
+                warnJobNo.innerText = jobNumber;
+                duplicateWarning.classList.remove('hidden');
+            } else {
+                duplicateWarning.classList.add('hidden');
+            }
+
+            try {
+                const { data, error } = await _supabase
+                    .from('assessments') 
+                    .select('boe_no, importer, duty, ass_date') 
+                    .eq('job', jobNumber) 
+                    .maybeSingle(); 
+
+                if (error) throw error;
+
+                if (data) {
+                    activeCloudJob = data;
+                    autoFillStatus.className = "text-xs text-emerald-600 mt-1.5 font-medium block";
+                    autoFillStatus.innerText = `✅ জব পাওয়া গেছে! ইম্পোর্টার: ${data.importer || 'N/A'}`;
+                } else {
+                    activeCloudJob = null;
+                    autoFillStatus.className = "text-xs text-rose-500 mt-1.5 font-medium block";
+                    autoFillStatus.innerText = "⛔ ভুল জব নম্বর অথবা মাস্টার ডাটাবেজে এন্ট্রি নেই!";
+                }
+            } catch (err) {
+                console.error(err);
+                autoFillStatus.innerText = "⚠️ ডাটাবেজ কানেকশন সমস্যা!";
+            }
+        }
+
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const date = document.getElementById('inputDate').value;
+            const jobNo = jobNoInput.value.trim();
+            const editId = document.getElementById('editExpenseId').value;
+
+            if(!jobNo) return;
+
+            if (!editId && !activeCloudJob) {
+                alert("দয়া করে একটি সঠিক এবং ভ্যালিড জব নম্বর দিন!");
+                return;
+            }
+
+            document.getElementById('expenseSubmitBtn').disabled = true;
+            document.getElementById('expenseSubmitBtn').innerText = "⏳ প্রসেস হচ্ছে...";
+
+            try {
+                if (editId) {
+                    const { error } = await _supabase
+                        .from('user_expenses')
+                        .update({ expense_date: date, job_no: jobNo })
+                        .eq('id', editId);
+
+                    if (error) throw error;
+                    document.getElementById('editExpenseId').value = '';
+                    document.getElementById('expenseFormTitle').innerHTML = `<span class="bg-blue-100 text-blue-700 p-1.5 rounded-lg text-sm">📝</span> নতুন খরচ এন্ট্রি`;
+                } else {
+                    let cloudDuty = 0;
+                    if (activeCloudJob.duty !== undefined && activeCloudJob.duty !== null) {
+                        cloudDuty = parseFloat(String(activeCloudJob.duty).replace(/,/g, '')) || 0;
+                    }
+
+                    const { error } = await _supabase
+                        .from('user_expenses')
+                        .insert([{
+                            expense_date: date,
+                            job_no: jobNo,
+                            boe_no: activeCloudJob.boe_no || 'N/A',
+                            importer_name: activeCloudJob.importer || 'N/A',
+                            duty_amount: cloudDuty,
+                            is_pending: (!activeCloudJob.ass_date)
+                        }]);
+
+                    if (error) throw error;
+                }
+
+                expenseForm.reset();
+                document.getElementById('inputDate').value = todayStr;
+                duplicateWarning.classList.add('hidden');
+                autoFillStatus.classList.add('hidden');
+                activeCloudJob = null;
+
+                await fetchExpensesFromCloud();
+                renderDashboard();
+            } catch (err) {
+                alert("খরচ ক্লাউডে সেভ করা যায়নি!");
+                console.error(err);
+            } finally {
+                document.getElementById('expenseSubmitBtn').disabled = false;
+                document.getElementById('expenseSubmitBtn').innerText = "ডেটা সেভ করুন";
+            }
+        });
+
+        window.editExpense = function(id) {
+            const target = expenses.find(item => item.id == id);
+            if(target) {
+                document.getElementById('editExpenseId').value = target.id;
+                document.getElementById('inputDate').value = target.expense_date;
+                document.getElementById('jobNo').value = target.job_no;
+                
+                document.getElementById('expenseFormTitle').innerHTML = `✏️ খরচ এন্ট্রি এডিট করুন`;
+                document.getElementById('expenseSubmitBtn').innerText = "আপডেট করুন";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        window.toggleStatus = async function(id, currentStatus) {
+            try {
+                const { error } = await _supabase
+                    .from('user_expenses')
+                    .update({ is_pending: !currentStatus })
+                    .eq('id', id);
+
+                if (error) throw error;
+                await fetchExpensesFromCloud();
+                renderDashboard();
+            } catch (err) {
+                alert("অবস্থা পরিবর্তন করা যায়নি!");
+                console.error(err);
+            }
+        }
+
+        window.deleteExpense = async function(id) {
+            if(confirm('আপনি কি এই এন্ট্রিটি ডাটাবেস থেকে ডিলিট করতে চান?')) {
+                try {
+                    const { error } = await _supabase
+                        .from('user_expenses')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    await fetchExpensesFromCloud();
+                    renderDashboard();
+                } catch (err) {
+                    alert("ডিলিট করা যায়নি!");
+                    console.error(err);
+                }
+            }
+        }
+
+        depositForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const date = document.getElementById('depositDate').value;
+            const amount = parseFloat(document.getElementById('depositAmount').value) || 0;
+            const editId = document.getElementById('editDepositId').value;
+
+            if (amount <= 0) return;
+
+            document.getElementById('depositSubmitBtn').disabled = true;
+            document.getElementById('depositSubmitBtn').innerText = "⏳ প্রসেস হচ্ছে...";
+
+            try {
+                if (editId) {
+                    const { error } = await _supabase
+                        .from('bank_deposits')
+                        .update({ amount: amount, deposit_date: date })
+                        .eq('id', editId);
+
+                    if (error) throw error;
+                    document.getElementById('editDepositId').value = '';
+                    document.getElementById('depositFormTitle').innerHTML = `<span class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg text-sm">🏦</span> ব্যাংক ডিপোজিট (টাকা জমা)`;
+                } else {
+                    const { error } = await _supabase
+                        .from('bank_deposits')
+                        .insert([{ amount: amount, deposit_date: date }]);
+
+                    if (error) throw error;
+                }
+
+                depositForm.reset();
+                document.getElementById('depositDate').value = todayStr; 
+                await fetchDepositsFromCloud();
+                renderDashboard();
+            } catch (err) {
+                alert("ডিপোজিট ক্লাউডে সেভ করা যায়নি!");
+                console.error(err);
+            } finally {
+                document.getElementById('depositSubmitBtn').disabled = false;
+                document.getElementById('depositSubmitBtn').innerText = "টাকা জমা করুন";
+            }
+        });
+
+        window.editDeposit = function(id) {
+            const target = deposits.find(item => item.id == id);
+            if(target) {
+                document.getElementById('editDepositId').value = target.id;
+                document.getElementById('depositDate').value = target.date || todayStr;
+                document.getElementById('depositAmount').value = target.amount;
+                document.getElementById('depositFormTitle').innerHTML = `✏️ ডিপোজিট এডিট করুন`;
+                document.getElementById('depositSubmitBtn').innerText = "আপডেট করুন";
+                document.getElementById('depositAmount').focus();
+            }
+        }
+
+        window.deleteDeposit = async function(id) {
+            if(confirm('আপনি কি এই ডিপোজিটটি ডিলিট করতে চান?')) {
+                try {
+                    const { error } = await _supabase
+                        .from('bank_deposits')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    await fetchDepositsFromCloud();
+                    renderDashboard();
+                } catch (err) {
+                    alert("ডিলিট করা যায়নি!");
+                    console.error(err);
+                }
+            }
+        }
+
+        function renderDashboard() {
+            if(!lockScreen.classList.contains('hidden')) return;
+
+            const fromDate = filterFromDateInput.value;
+            const toDate = filterToDateInput.value;
+            const tableBody = document.getElementById('expenseTableBody');
+            const depositTableBody = document.getElementById('depositTableBody');
+            
+            tableBody.innerHTML = '';
+            depositTableBody.innerHTML = '';
+
+            let totalDepositCalc = 0;
+            let lastDepositDateStr = "নাই";
+
+            deposits.forEach((item, index) => {
+                totalDepositCalc += item.amount;
+                lastDepositDateStr = item.date || todayStr;
+                
+                const dRow = document.createElement('tr');
+                dRow.className = "hover:bg-slate-50 transition-colors";
+                dRow.innerHTML = `
+                    <td class="p-2.5 text-center text-slate-400 font-medium">${index + 1}</td>
+                    <td class="p-2.5 font-medium text-slate-700">${formatDateToBanglaDMY(item.date || todayStr)}</td>
+                    <td class="p-2.5 text-right font-bold text-slate-900">৳ ${formatCurrencyWithCommas(item.amount)}</td>
+                    <td class="p-2.5 text-center space-x-2">
+                        <button onclick="editDeposit(${item.id})" class="text-blue-500 hover:text-blue-700 cursor-pointer">✏️</button>
+                        <button onclick="deleteDeposit(${item.id})" class="text-rose-500 hover:text-rose-700 cursor-pointer">❌</button>
+                    </td>
+                `;
+                depositTableBody.appendChild(dRow);
+            });
+
+            let totalApprovedExpenses = expenses.filter(item => !item.is_pending).reduce((sum, item) => sum + (parseFloat(item.duty_amount) || 0), 0);
+            let totalBookedAmount = expenses.filter(item => item.is_pending).reduce((sum, item) => sum + (parseFloat(item.duty_amount) || 0), 0);
+            let finalAvailableBalance = totalDepositCalc - totalApprovedExpenses;
+
+            document.getElementById('totalDepositDisplay').innerText = formatCurrencyWithCommas(totalDepositCalc);
+            document.getElementById('totalExpenseDisplay').innerText = formatCurrencyWithCommas(totalApprovedExpenses);
+            document.getElementById('totalBookedDisplay').innerText = formatCurrencyWithCommas(totalBookedAmount);
+            document.getElementById('currentBalanceDisplay').innerText = formatCurrencyWithCommas(finalAvailableBalance);
+
+            document.getElementById('printBalanceField').innerText = formatCurrencyWithCommas(finalAvailableBalance);
+            document.getElementById('printLastDepositField').innerText = (lastDepositDateStr !== "নাই") ? formatDateToBanglaDMY(lastDepositDateStr) : "নাই";
+
+            let filteredExpenses = expenses.filter(item => {
+                const itemDate = item.expense_date;
+                if (fromDate && toDate) return itemDate >= fromDate && itemDate <= toDate;
+                if (fromDate) return itemDate >= fromDate;
+                if (toDate) return itemDate <= toDate;
+                return itemDate === todayStr; 
+            });
+
+            document.getElementById('tableTitleDate').innerText = (fromDate || toDate) 
+                ? `${fromDate ? formatDateToBanglaDMY(fromDate) : '...'} - ${toDate ? formatDateToBanglaDMY(toDate) : '...'}` 
+                : `আজ (${formatDateToBanglaDMY(todayStr)})`;
+
+            let sumDuty = 0;
+            document.getElementById('totalEntries').innerText = convertToBanglaNumber(filteredExpenses.length);
+
+            if(filteredExpenses.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 italic bg-slate-50/50">নির্বাচিত সময়ে কোনো খরচের তথ্য পাওয়া যায়নি।</td></tr>`;
+            } else {
+                filteredExpenses.forEach((item, index) => {
+                    const dutyFloat = parseFloat(item.duty_amount) || 0;
+                    sumDuty += dutyFloat;
+
+                    let statusBadge = item.is_pending
+                        ? `<button onclick="toggleStatus(${item.id}, true)" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 cursor-pointer">⏳ Pending</button>`
+                        : `<button onclick="toggleStatus(${item.id}, false)" class="text-[10px] font-bold px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 cursor-pointer">✅ Approved</button>`;
+
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-50/80 transition-colors group";
+                    row.innerHTML = `
+                        <td class="p-3 text-center font-medium text-slate-400">${convertToBanglaNumber(index + 1)}</td>
+                        <td class="p-3 text-slate-500 whitespace-nowrap">${formatDateToBanglaDMY(item.expense_date)}</td>
+                        <td class="p-3 font-semibold text-slate-800">${item.job_no}</td>
+                        <td class="p-3 font-mono text-blue-600 font-medium">${item.boe_no || 'N/A'}</td>
+                        <td class="p-3 font-medium text-slate-700">${item.importer_name || 'N/A'}</td>
+                        <td class="p-3 text-right font-bold text-slate-900 bg-slate-50/30 group-hover:bg-transparent">৳ ${formatCurrencyWithCommas(dutyFloat)}</td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-center no-print space-x-2 whitespace-nowrap opacity-70 group-hover:opacity-100 transition-opacity">
+                            <button onclick="editExpense(${item.id})" class="text-blue-500 hover:text-blue-700 font-medium cursor-pointer">✏️</button>
+                            <button onclick="deleteExpense(${item.id})" class="text-rose-500 hover:text-rose-700 font-medium cursor-pointer">❌</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            document.getElementById('grandTotal').innerText = `৳ ${formatCurrencyWithCommas(sumDuty)}`;
+        }
+
+        filterFromDateInput.addEventListener('change', renderDashboard);
+        filterToDateInput.addEventListener('change', renderDashboard);
+        clearFilterBtn.addEventListener('click', () => {
+            filterFromDateInput.value = '';
+            filterToDateInput.value = '';
+            renderDashboard();
+        });
+
+        sysPasswordInput.focus();
+    </script>
+</body>
+</html>
