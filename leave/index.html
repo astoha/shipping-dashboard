@@ -52,7 +52,11 @@
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Password</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
-                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white text-sm transition">
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white text-sm transition">
+                        <!-- Password Toggle Button -->
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none">
+                            <i id="passwordToggleIcon" class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -171,11 +175,17 @@
                         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                             <i class="fa-solid fa-calendar-days text-sky-600"></i> All System Leave Requests Management
                         </h2>
-                        <select id="adminLeaveYearFilter" onchange="renderAdminDashboard()" class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
-                            <option value="2028">2028</option>
-                        </select>
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                                <input type="text" id="adminLeaveSearch" oninput="renderAdminDashboard()" placeholder="Search applicant, reason, status..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <select id="adminLeaveYearFilter" onchange="renderAdminDashboard()" class="bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                <option value="2026">2026</option>
+                                <option value="2027">2027</option>
+                                <option value="2028">2028</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
@@ -199,10 +209,14 @@
 
                 <!-- Employee Directory Table -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                             <i class="fa-solid fa-address-book text-sky-600"></i> Registered Employee Directory
                         </h2>
+                        <div class="relative w-full sm:w-64">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                            <input type="text" id="adminEmpSearch" oninput="renderAdminDashboard()" placeholder="Search name, mobile, role..." class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
@@ -623,6 +637,21 @@
         let leaves = [];
         let currentSession = JSON.parse(localStorage.getItem(STORAGE_SESSION)) || null;
 
+        // --- Toggle Password Visibility ---
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById("loginPassword");
+            const toggleIcon = document.getElementById("passwordToggleIcon");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                toggleIcon.classList.remove("fa-eye");
+                toggleIcon.classList.add("fa-eye-slash");
+            } else {
+                passwordInput.type = "password";
+                toggleIcon.classList.remove("fa-eye-slash");
+                toggleIcon.classList.add("fa-eye");
+            }
+        }
+
         // Fetch all data from Supabase on startup
         async function fetchSupabaseData() {
             try {
@@ -876,8 +905,19 @@
             const role = document.getElementById("empRole").value;
             const tl = role === 'Manager' ? 'None' : document.getElementById("empAssignedTL").value;
 
-            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id === loginId)) {
+            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id.toLowerCase() === loginId.toLowerCase())) {
                 showToast("Error: Login ID already exists or is reserved.", "error");
+                return;
+            }
+
+            // Check duplicate employee entry restriction with mobile number and same name
+            if (employees.some(e => e.mobile === mobile)) {
+                showToast("Error: An employee with this Mobile Number already exists.", "error");
+                return;
+            }
+
+            if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+                showToast("Error: An employee with this Full Name already exists.", "error");
                 return;
             }
 
@@ -931,8 +971,19 @@
             const role = document.getElementById("editEmpRole").value;
             const tl = role === 'Manager' ? 'None' : document.getElementById("editEmpAssignedTL").value;
 
-            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id === loginId && e.id !== id)) {
+            if (loginId.toLowerCase() === 'admin' || employees.some(e => e.login_id.toLowerCase() === loginId.toLowerCase() && e.id !== id)) {
                 showToast("Error: Login ID already exists or is reserved.", "error");
+                return;
+            }
+
+            // Check duplicate employee entry restriction on update with mobile number and same name
+            if (employees.some(e => e.mobile === mobile && e.id !== id)) {
+                showToast("Error: An employee with this Mobile Number already exists.", "error");
+                return;
+            }
+
+            if (employees.some(e => e.name.toLowerCase() === name.toLowerCase() && e.id !== id)) {
+                showToast("Error: An employee with this Full Name already exists.", "error");
                 return;
             }
 
@@ -972,7 +1023,20 @@
             document.getElementById("statApproved").textContent = leaves.filter(l => l.status === "Approved").length;
 
             const adminYear = document.getElementById("adminLeaveYearFilter").value;
-            const filteredAdminLeaves = leaves.filter(l => getYearFromDate(l.start) === adminYear);
+            const leaveSearchQuery = (document.getElementById("adminLeaveSearch")?.value || "").toLowerCase();
+            
+            let filteredAdminLeaves = leaves.filter(l => getYearFromDate(l.start) === adminYear);
+
+            if (leaveSearchQuery) {
+                filteredAdminLeaves = filteredAdminLeaves.filter(l => 
+                    l.applicantName.toLowerCase().includes(leaveSearchQuery) ||
+                    l.type.toLowerCase().includes(leaveSearchQuery) ||
+                    l.reason.toLowerCase().includes(leaveSearchQuery) ||
+                    l.status.toLowerCase().includes(leaveSearchQuery) ||
+                    l.start.toLowerCase().includes(leaveSearchQuery) ||
+                    l.end.toLowerCase().includes(leaveSearchQuery)
+                );
+            }
 
             const adminLeaveTableBody = document.getElementById("adminLeaveTableBody");
             if (filteredAdminLeaves.length === 0) {
@@ -980,7 +1044,6 @@
             } else {
                 adminLeaveTableBody.innerHTML = "";
                 filteredAdminLeaves.forEach((leave, index) => {
-                    // Admin can edit or delete any submitted/approved leave. No one can after the approve (except admin, admin can edit or delete).
                     let adminActionsHtml = `
                         <button onclick="openEditLeaveModal(${leave.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition" title="Edit Leave"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button onclick="deleteLeave(${leave.id})" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition ml-1" title="Delete Leave"><i class="fa-solid fa-trash-can"></i></button>
@@ -1000,12 +1063,25 @@
                 });
             }
 
+            const empSearchQuery = (document.getElementById("adminEmpSearch")?.value || "").toLowerCase();
+            let filteredEmployees = [...employees];
+
+            if (empSearchQuery) {
+                filteredEmployees = filteredEmployees.filter(emp => 
+                    emp.name.toLowerCase().includes(empSearchQuery) ||
+                    emp.login_id.toLowerCase().includes(empSearchQuery) ||
+                    emp.mobile.toLowerCase().includes(empSearchQuery) ||
+                    emp.role.toLowerCase().includes(empSearchQuery) ||
+                    (emp.tl && emp.tl.toLowerCase().includes(empSearchQuery))
+                );
+            }
+
             const tbody = document.getElementById("adminEmployeeTableBody");
-            if (employees.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300 block"></i> No employees registered yet.</td></tr>`;
+            if (filteredEmployees.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-folder-open text-3xl mb-2 text-slate-300 block"></i> No matching employees found.</td></tr>`;
             } else {
                 tbody.innerHTML = "";
-                employees.forEach((emp, index) => {
+                filteredEmployees.forEach((emp, index) => {
                     const roleBadge = emp.role === 'Manager' ? 'bg-indigo-50 text-indigo-700' : (emp.role === 'TeamLeader' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700');
                     tbody.innerHTML += `
                         <tr class="hover:bg-sky-50/45 transition">
@@ -1078,7 +1154,6 @@
                     if (leave.status === 'Approved') {
                         passOrActionHtml = `<button onclick="openPrintModal(${leave.id})" class="bg-sky-100 hover:bg-sky-200 text-sky-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ml-auto shadow-sm"><i class="fa-solid fa-qrcode"></i> View Pass</button>`;
                     } else {
-                        // Regular user can edit/delete their own leave if not approved yet
                         passOrActionHtml = `
                             <div class="flex items-center justify-end space-x-1">
                                 <button onclick="openEditLeaveModal(${leave.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition" title="Edit Application"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -1136,14 +1211,12 @@
                     queue.forEach((leave, index) => {
                         let btnHtml = "";
                         if (currentSession.role === 'TeamLeader') {
-                            // Team leader can edit before forwarded to manager but can't delete
                             btnHtml = `
                                 <button onclick="updateStatus(${leave.id}, 'Pending Manager Review')" class="bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-sky-700 shadow-sm mr-1 transition">Forward</button>
                                 <button onclick="openEditLeaveModal(${leave.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition mr-1" title="Edit Request"><i class="fa-solid fa-pen-to-square"></i></button>
                                 <button onclick="updateStatus(${leave.id}, 'Rejected')" class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-200 transition">Reject</button>
                             `;
                         } else if (currentSession.role === 'Manager') {
-                            // Manager also can edit but can't delete before approve
                             btnHtml = `
                                 <button onclick="updateStatus(${leave.id}, 'Approved')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-700 shadow-sm mr-1 transition">Approve</button>
                                 <button onclick="openEditLeaveModal(${leave.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition mr-1" title="Edit Request"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -1191,8 +1264,6 @@
                     historyBody.innerHTML = "";
                     myDecisionsHistory.forEach((leave, index) => {
                         let historyActionHtml = `<span class="text-xs text-slate-400 italic">No action</span>`;
-                        // Once approved, no one can delete except admin. But manager/TL can edit before approve (handled in queue), and no one can after approve.
-                        // Let's ensure history log shows correct actions if needed (approved items cannot be edited/deleted by TL/Manager).
                         if (currentSession.type === 'ADMIN') {
                             historyActionHtml = `
                                 <button onclick="openEditLeaveModal(${leave.id})" class="text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 p-2 rounded-lg transition" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -1245,19 +1316,16 @@
             const leave = leaves.find(l => l.id === leaveId);
             if (!leave) return;
 
-            // Enforcement rule: No one can delete after approved (except Admin)
             if (leave.status === 'Approved' && currentSession.type !== 'ADMIN') {
                 showToast("Error: No one can delete a leave request after approval.", "error");
                 return;
             }
 
-            // Team Leader can't delete at all
             if (currentSession.role === 'TeamLeader') {
                 showToast("Error: Team Leader cannot delete leave requests.", "error");
                 return;
             }
 
-            // Manager can't delete before approve (Manager can't delete pending/unapproved requests as per instruction: "Team leader can edit before forwarded to manager but can't delete - Manager also can edit but can't delete before approve")
             if (currentSession.role === 'Manager' && leave.status !== 'Approved') {
                 showToast("Error: Manager cannot delete requests before approval.", "error");
                 return;
@@ -1284,7 +1352,6 @@
             const leave = leaves.find(l => l.id === leaveId);
             if (!leave) return;
 
-            // Check if user has permission to edit
             if (leave.status === 'Approved' && currentSession.type !== 'ADMIN') {
                 showToast("Error: No one can edit a leave request after approval.", "error");
                 return;
