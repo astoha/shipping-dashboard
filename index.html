@@ -8,155 +8,292 @@
     <style>
         :root {
             --glass: rgba(255, 255, 255, 0.95);
-            --primary: #1e3a8a; /* Deep US Navy Blue */
-            --accent: #b91c1c;  /* US Flag Red */
-            --border: rgba(185, 28, 28, 0.25);
+            --primary: #1e3a8a; /* Deep Navy Blue */
+            --primary-dark: #0f172a;
+            --accent: #b91c1c;  /* Red Accent */
+            --accent-hover: #991b1b;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e3a8a 40%, #3b82f6 80%, #f8fafc 100%);
+            --border: rgba(30, 58, 138, 0.15);
             --admin-color: #b91c1c;
             --staff-color: #1d4ed8;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
         }
 
         * { box-sizing: border-box; }
         html, body { 
             height: 100vh; margin: 0; padding: 0;
-            font-family: 'Inter', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 30%, #f8fafc 65%, #b91c1c 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
             background-attachment: fixed;
+            color: #0f172a;
         }
 
-        .main-wrapper { display: flex; flex-direction: column; height: 100vh; padding: 12px; }
+        .main-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            padding: 12px; 
+            gap: 12px;
+        }
 
         .container {
-            display: flex; flex-direction: column; flex: 1;
-            background: var(--glass); backdrop-filter: blur(16px);
+            display: flex; 
+            flex-direction: column; 
+            flex: 1;
+            background: var(--glass); 
+            backdrop-filter: blur(20px);
             border-radius: 16px; 
-            border: 2px solid transparent;
-            padding: 18px; 
-            box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 
-                        0 0 20px rgba(30, 58, 138, 0.4), 
-                        inset 0 0 15px rgba(185, 28, 28, 0.15);
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1), borderGlow 4s infinite alternate;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 16px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             overflow: hidden;
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes borderGlow {
-            0% {
-                border-color: rgba(30, 58, 138, 0.6);
-                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 15px rgba(30, 58, 138, 0.5), inset 0 0 10px rgba(30, 58, 138, 0.2);
-            }
-            50% {
-                border-color: rgba(255, 255, 255, 0.9);
-                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 25px rgba(255, 255, 255, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.4);
-            }
-            100% {
-                border-color: rgba(185, 28, 28, 0.7);
-                box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2), 0 0 15px rgba(185, 28, 28, 0.6), inset 0 0 10px rgba(185, 28, 28, 0.2);
-            }
+        /* Header */
+        .corp-header { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px; 
+            border-bottom: 2px solid rgba(30, 58, 138, 0.1); 
+            padding-bottom: 10px; 
         }
-
-        .corp-header { position: relative; text-align: center; margin-bottom: 12px; border-bottom: 2px solid rgba(30, 58, 138, 0.1); padding-bottom: 10px; }
-        .corp-header h1 { margin: 0; font-size: 1.3rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.75px; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .corp-header p { margin: 2px 0 0 0; font-size: 0.72rem; color: #1e3a8a; font-weight: 700; letter-spacing: 0.5px; }
+        .corp-title h1 { 
+            margin: 0; 
+            font-size: 1.35rem; 
+            color: var(--primary); 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        .corp-title p { 
+            margin: 2px 0 0 0; 
+            font-size: 0.75rem; 
+            color: #475569; 
+            font-weight: 600; 
+        }
 
         .top-right-tools {
-            position: absolute; right: 0; top: 0;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
         }
 
-        .top-counter { font-weight: 800; font-size: 0.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 1px; }
-        #roleStatus { font-size: 0.6rem; font-weight: 800; display: none; }
-
-        #entryWrapper { display: none; margin-bottom: 12px; animation: slideDown 0.3s ease-out; }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
+        #roleStatus { 
+            font-size: 0.72rem; 
+            font-weight: 800; 
+            display: none; 
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
         }
 
-        .entry-section { background: rgba(30, 58, 138, 0.04); padding: 14px; border-radius: 10px; border: 2px solid var(--accent); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
-        .entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; align-items: flex-end; }
+        /* Layout Split */
+        .app-body {
+            display: flex;
+            flex: 1;
+            gap: 16px;
+            overflow: hidden;
+        }
 
+        /* LEFT SIDEBAR: Entry Form */
+        #entryWrapper { 
+            width: 320px; 
+            flex-shrink: 0;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 14px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .entry-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .entry-grid { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 9px; 
+        }
+
+        /* RIGHT PANEL */
+        .content-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            gap: 12px;
+        }
+
+        /* Stat Cards */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .stat-card {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-card .label { font-size: 0.62rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .stat-card .value { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: 2px; }
+
+        /* Filter Top Section */
         .filter-section {
-            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: flex-end;
-            padding: 12px; background: rgba(30, 58, 138, 0.04); border-radius: 10px; border: 1px solid rgba(30, 58, 138, 0.12);
-            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.03);
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            align-items: flex-end;
+            padding: 10px 12px; 
+            background: #ffffff; 
+            border-radius: 10px; 
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-        .filter-item { flex: 1; min-width: 110px; }
+        .filter-item { flex: 1; min-width: 100px; }
 
-        label { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 3px; letter-spacing: 0.5px; }
+        /* Inputs & Form Elements */
+        label { 
+            font-size: 0.62rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: var(--primary); 
+            display: block; 
+            margin-bottom: 3px; 
+            letter-spacing: 0.3px; 
+        }
         input, select { 
-            width: 100%; padding: 8px 10px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 0.75rem; background: white; color: #0f172a; 
-            transition: all 0.25s ease; cursor: pointer;
+            width: 100%; 
+            padding: 7px 9px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            background: #f8fafc; 
+            color: #0f172a; 
+            transition: all 0.2s ease; 
         }
-        input[type="text"]:not([readonly]), input[type="search"], input[type="password"] { cursor: text; }
-        input:hover, select:hover { border-color: var(--primary); }
-        input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15); }
+        input:hover, select:hover { border-color: var(--primary); background: #ffffff; }
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12); 
+        }
 
-        .table-container { flex: 1; overflow: auto; background: white; border-radius: 10px; border: 1px solid #93c5fd; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1150px; }
+        /* Table Filter Inputs */
+        .th-filter {
+            padding: 4px;
+            background: #0f172a;
+        }
+        .th-filter input, .th-filter select {
+            padding: 3px 5px;
+            font-size: 0.65rem;
+            height: 24px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: white;
+        }
+        .th-filter input::placeholder { color: #94a3b8; }
+
+        /* Table Styling */
+        .table-container { 
+            flex: 1; 
+            overflow: auto; 
+            background: white; 
+            border-radius: 10px; 
+            border: 1px solid #cbd5e1; 
+            box-shadow: var(--card-shadow); 
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1250px; }
         th { 
             position: sticky; top: 0; 
-            background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%); 
-            padding: 12px 10px; text-align: left; font-size: 0.65rem; color: #ffffff; 
-            z-index: 100; border-bottom: 3px solid var(--accent); 
-            text-transform: uppercase; letter-spacing: 0.6px; 
+            background: #0f172a; 
+            padding: 8px; 
+            text-align: left; 
+            font-size: 0.65rem; 
+            color: #ffffff; 
+            z-index: 10; 
+            border-bottom: 2px solid var(--accent); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
         }
-        td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.72rem; transition: background-color 0.15s ease; }
-        tr:hover td { background-color: rgba(30, 58, 138, 0.03); }
+        td { 
+            padding: 8px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 0.72rem; 
+        }
+        tr:hover td { background-color: rgba(59, 130, 246, 0.05); }
 
-        .col-sl { width: 40px; }
-        .col-date { width: 95px; }
-        .tag { padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 0.6rem; letter-spacing: 0.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .tag { 
+            padding: 3px 6px; 
+            border-radius: 4px; 
+            font-weight: 800; 
+            font-size: 0.6rem; 
+            letter-spacing: 0.5px; 
+            display: inline-block;
+            text-align: center;
+        }
         .YELLOW { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; }
         .RED { background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; }
+        
+        /* Type Badges */
+        .tag-import { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+        .tag-export { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 
+        /* Buttons */
         .btn { 
-            border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.7rem; 
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            border: none; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.7rem; 
+            transition: all 0.2s ease; 
             display: inline-flex; align-items: center; justify-content: center; gap: 4px;
         }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .btn:active { transform: translateY(0); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-        .btn-toggle { background: var(--primary); color: white; margin-bottom: 10px; border-left: 4px solid var(--accent); display: none; }
-        .btn-toggle:hover { background: #172554; }
-        
-        .btn-lock { background: #ffffff; color: var(--primary); padding: 6px 12px; font-size: 0.65rem; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-lock:hover { background: #f1f5f9; border-color: var(--primary); }
-        
-        .btn-add { background: var(--accent); color: white; width: 100%; }
-        .btn-add:hover { background: #991b1b; }
-        
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.12); }
+        .btn-lock { background: #ffffff; color: var(--primary); border: 1px solid #cbd5e1; }
+        .btn-add { background: var(--accent); color: white; width: 100%; padding: 9px; font-size: 0.75rem; margin-top: 4px; }
+        .btn-add:hover { background: var(--accent-hover); }
         .btn-print { background: var(--primary); color: white; }
-        .btn-print:hover { background: #172554; }
-        
-        .btn-edit { background: #3b82f6; color: white; }
-        .btn-edit:hover { background: #2563eb; }
+        .btn-edit { background: #2563eb; color: white; }
 
         .admin-only { display: none !important; }
         .print-header-info { display: none; }
 
-        /* Login Overlay Screen */
+        /* Login & User Modals */
         #loginOverlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
             display: flex; justify-content: center; align-items: center; z-index: 9999;
         }
         .login-card {
-            background: #ffffff; padding: 30px; border-radius: 16px; width: 340px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background: #ffffff; padding: 32px; border-radius: 16px; width: 340px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
             border: 2px solid var(--accent); text-align: center;
         }
-        .login-card h2 { margin-top: 0; color: var(--primary); font-size: 1.2rem; text-transform: uppercase; }
-        .login-card p { font-size: 0.75rem; color: #64748b; margin-bottom: 20px; }
-        .login-card input { margin-bottom: 12px; }
-        .login-card button { width: 100%; background: var(--accent); color: white; padding: 10px; font-size: 0.8rem; margin-top: 5px; }
+        .login-card h2 { margin-top: 0; color: var(--primary); font-size: 1.25rem; text-transform: uppercase; }
 
-        /* User & Audit Logs Modal Styles */
         #userModal {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
@@ -164,7 +301,7 @@
         }
         .user-modal-content {
             background: white; padding: 20px; border-radius: 12px; width: 780px; max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-top: 4px solid var(--primary);
+            border-top: 4px solid var(--primary);
         }
 
         @media print {
@@ -173,25 +310,24 @@
             .main-wrapper { height: auto !important; padding: 0; display: block; }
             .container { height: auto !important; display: block; border: none; box-shadow: none; padding: 0; overflow: visible !important; }
             .print-header-info { display: block; border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 5px; font-size: 0.85rem; }
+            .app-body { display: block; }
+            #entryWrapper, .stats-bar, .filter-section, .no-print, .btn-col, .btn-lock, .admin-only, #roleStatus, .th-filter { display: none !important; }
             .table-container { height: auto !important; overflow: visible !important; display: block; border: none; }
             table { min-width: 100% !important; width: 100% !important; table-layout: auto !important; }
-            th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; z-index: 1 !important; }
+            th { position: static !important; background: #eee !important; color: black !important; border: 1px solid #000 !important; }
             td { border: 1px solid #000 !important; }
-            .no-print, .btn-col, .btn-lock, .admin-only, #roleStatus { display: none !important; }
         }
     </style>
 </head>
 <body>
 
-<!-- Login Overlay Screen -->
+<!-- Login Screen -->
 <div id="loginOverlay">
     <div class="login-card">
         <h2>Chevron Lines</h2>
-        <p>Please log in to access the Secure Manager</p>
-        <div style="text-align: left;"><label>User ID</label></div>
-        <input type="text" id="loginUser" placeholder="Enter User ID">
-        <div style="text-align: left;"><label>Password</label></div>
-        <input type="password" id="loginPass" placeholder="Enter Password">
+        <p style="font-size:0.75rem; color:#64748b;">Please log in to access the Secure Manager</p>
+        <div style="text-align: left; margin-bottom: 8px;"><label>User ID</label><input type="text" id="loginUser" placeholder="Enter User ID"></div>
+        <div style="text-align: left; margin-bottom: 12px;"><label>Password</label><input type="password" id="loginPass" placeholder="Enter Password"></div>
         <button class="btn btn-add" onclick="handleLogin()">Login</button>
     </div>
 </div>
@@ -204,7 +340,7 @@
             <button class="btn" style="background:#cbd5e1; color:#0f172a; padding:4px 8px;" onclick="toggleUserModal(false)">Close</button>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">
             <button class="btn btn-print" onclick="switchAuditTab('users')" id="tabUsersBtn">Manage Users</button>
             <button class="btn btn-lock" onclick="switchAuditTab('logins')" id="tabLoginsBtn">Login Activity Tracker</button>
         </div>
@@ -222,13 +358,12 @@
                     </select>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-add" id="saveUserBtn" onclick="saveUserRecord()">Save User</button>
+                    <button class="btn btn-add" id="saveUserBtn" onclick="saveUserRecord()" style="width: auto;">Save User</button>
                     <button class="btn" id="cancelUserEditBtn" style="display:none; background:#cbd5e1; color:#0f172a;" onclick="cancelUserEdit()">Cancel</button>
                 </div>
             </div>
-            <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">Existing Users List:</div>
-            <div id="userListContainer" style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; max-height: 200px; overflow-y: auto;">
-                <table style="width:100%; min-width:100%; border-collapse:collapse;">
+            <div id="userListContainer" style="border: 1px solid #cbd5e1; border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                <table style="width:100%; min-width:100%;">
                     <thead>
                         <tr style="background:#f1f5f9;">
                             <th style="padding:6px; font-size:0.6rem; position:static;">User ID</th>
@@ -244,13 +379,12 @@
 
         <div id="sectionLogins" style="display: none;">
             <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; background: rgba(30, 58, 138, 0.04); padding: 8px; border-radius: 6px;">
-                <div style="flex: 1;"><label>Filter by Date</label><input type="date" id="loginDateFilter" onchange="renderLoginLogsTable()" onclick="this.showPicker && this.showPicker()"></div>
+                <div style="flex: 1;"><label>Filter by Date</label><input type="date" id="loginDateFilter" onchange="renderLoginLogsTable()"></div>
                 <div style="flex: 1;"><label>Filter by User ID</label><select id="loginUserFilter" onchange="renderLoginLogsTable()"><option value="">All Users</option></select></div>
                 <div><button class="btn" style="background:#cbd5e1; color:#0f172a;" onclick="clearLoginFilters()">Reset</button></div>
             </div>
-            <div style="font-size: 0.7rem; font-weight: 700; margin-bottom: 5px; color:#64748b;">System Login Records (Latest First):</div>
-            <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; max-height: 250px; overflow-y: auto;">
-                <table style="width:100%; min-width:100%; border-collapse:collapse;">
+            <div style="border: 1px solid #cbd5e1; border-radius: 6px; max-height: 250px; overflow-y: auto;">
+                <table style="width:100%; min-width:100%;">
                     <thead>
                         <tr style="background:#f1f5f9;">
                             <th style="padding:6px; font-size:0.6rem; position:static;">User ID</th>
@@ -261,22 +395,21 @@
                 </table>
             </div>
         </div>
-
     </div>
 </div>
 
 <div class="main-wrapper">
     <div class="container">
+        <!-- Header -->
         <div class="corp-header">
-            <h1>Chevron Lines (C&F) Limited</h1>
-            <p>Agrabad C/A, Chittagong.</p>
+            <div class="corp-title">
+                <h1>Chevron Lines (C&F) Limited</h1>
+                <p>Agrabad C/A, Chittagong.</p>
+            </div>
             <div class="top-right-tools no-print">
-                <div class="top-counter">R: <span id="main_count">0</span></div>
                 <div id="roleStatus"></div>
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn btn-lock admin-only" id="manageUsersBtn" onclick="toggleUserModal(true)">⚙️ Security Log</button>
-                    <button class="btn btn-lock" id="lockBtn" onclick="handleLogout()">🔓 Logout</button>
-                </div>
+                <button class="btn btn-lock admin-only" id="manageUsersBtn" onclick="toggleUserModal(true)">⚙️ Security Log</button>
+                <button class="btn btn-lock" id="lockBtn" onclick="handleLogout()">🔓 Logout</button>
             </div>
         </div>
 
@@ -287,62 +420,132 @@
             </div>
         </div>
 
-        <button class="btn btn-toggle no-print admin-only" id="newEntryBtn" onclick="toggleEntry()">+ New Data Entry</button>
-
-        <div id="entryWrapper" class="no-print admin-only">
-            <div class="entry-section">
+        <!-- Main Body -->
+        <div class="app-body">
+            
+            <!-- LEFT PANEL: DATA ENTRY FORM -->
+            <div id="entryWrapper" class="no-print admin-only">
+                <div class="entry-title">
+                    <span>+ New Entry</span>
+                    <small style="color: #64748b; font-size: 0.65rem;">Admin Access</small>
+                </div>
                 <div class="entry-grid">
-                    <div><label>Job</label><input type="text" id="job_in"></div>
-                    <div><label>Importer</label><input type="text" id="imp_in" list="imp_suggestions"><datalist id="imp_suggestions"></datalist></div>
-                    <div><label>Description</label><input type="text" id="desc_in" list="desc_suggestions"><datalist id="desc_suggestions"></datalist></div>
-                    <div><label>BL No</label><input type="text" id="bl_in"></div>
-                    <div><label>LC No</label><input type="text" id="lc_in"></div>
-                    <div><label>BoE No</label><input type="text" id="boe_n_in"></div>
+                    <div>
+                        <label>Record Type</label>
+                        <select id="record_type_in">
+                            <option value="IMPORT">IMPORT</option>
+                            <option value="EXPORT">EXPORT</option>
+                        </select>
+                    </div>
+                    <div><label>Job No</label><input type="text" id="job_in" placeholder="Job number"></div>
+                    <div><label>Importer / Exporter</label><input type="text" id="imp_in" list="imp_suggestions" placeholder="Company Name"><datalist id="imp_suggestions"></datalist></div>
+                    <div><label>Description</label><input type="text" id="desc_in" list="desc_suggestions" placeholder="Goods description"><datalist id="desc_suggestions"></datalist></div>
+                    <div><label>BL No</label><input type="text" id="bl_in" placeholder="BL number"></div>
+                    <div><label>LC No</label><input type="text" id="lc_in" placeholder="LC number"></div>
+                    <div><label>BoE No</label><input type="text" id="boe_n_in" placeholder="BoE number"></div>
                     <div><label>BoE Date</label><input type="date" id="boe_d_in" onclick="this.showPicker && this.showPicker()"></div>
-                    <div><label>Duty</label><input type="text" id="duty_in"></div>
+                    <div><label>Duty</label><input type="text" id="duty_in" placeholder="Duty amount"></div>
                     <div><label>Status</label><select id="ry_in"><option>YELLOW</option><option>RED</option></select></div>
-                    <div><label>Remark</label><input type="text" id="rem_in"></div>
-                    <div><button class="btn btn-add" onclick="addData()">Save</button></div>
+                    <div><label>Remark</label><input type="text" id="rem_in" placeholder="Notes/Remarks"></div>
+                    <button class="btn btn-add" onclick="addData()">Save Record</button>
                 </div>
             </div>
-        </div>
 
-        <div class="filter-section no-print">
-            <div class="filter-item"><label>BoE Date Search</label><input type="date" id="boeDateFilter" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
-            <div class="filter-item"><label>Ass. Date From</label><input type="date" id="assFrom" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
-            <div class="filter-item"><label>Ass. Date To</label><input type="date" id="assTo" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
-            
-            <div class="filter-item"><label>View</label><select id="viewMode" onchange="applyFilters()">
-                <option value="pending" selected>Non-Assessed</option>
-                <option value="all">Full Database</option>
-                <option value="completed">Assessed</option>
-                <option value="combined">Date View + Pendings</option>
-            </select></div>
-            <div class="filter-item" style="flex: 2;"><label>Search</label><input type="text" id="searchInput" placeholder="Search keywords..." onkeyup="applyFilters()"></div>
-            <button class="btn btn-print" onclick="preparePrint()">Print</button>
-        </div>
+            <!-- RIGHT PANEL: DASHBOARD & TABLE -->
+            <div class="content-panel">
+                
+                <!-- Dashboard Summary Cards -->
+                <div class="stats-bar no-print">
+                    <div class="stat-card">
+                        <span class="label">Filtered Records</span>
+                        <span class="value" id="main_count">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="label">Non-Assessed</span>
+                        <span class="value" id="stat_pending" style="color: #d97706;">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="label">Assessed</span>
+                        <span class="value" id="stat_completed" style="color: #16a34a;">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="label">Red Status</span>
+                        <span class="value" id="stat_red" style="color: var(--accent);">0</span>
+                    </div>
+                </div>
 
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="col-sl">SL</th>
-                        <th>Job</th>
-                        <th>Importer Name</th>
-                        <th>Description</th>
-                        <th>BL No</th>
-                        <th>LC No</th>
-                        <th>BoE No</th>
-                        <th class="col-date">BoE Date</th>
-                        <th>Duty</th>
-                        <th>Status</th>
-                        <th>Remark</th>
-                        <th class="col-date">Ass. Date</th>
-                        <th class="col-act btn-col">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+                <!-- Global Filters & Print -->
+                <div class="filter-section no-print">
+                    <div class="filter-item"><label>BoE Date</label><input type="date" id="boeDateFilter" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
+                    <div class="filter-item"><label>Ass. From</label><input type="date" id="assFrom" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
+                    <div class="filter-item"><label>Ass. To</label><input type="date" id="assTo" onchange="applyFilters()" onclick="this.showPicker && this.showPicker()"></div>
+                    
+                    <div class="filter-item"><label>View</label><select id="viewMode" onchange="applyFilters()">
+                        <option value="pending" selected>Non-Assessed</option>
+                        <option value="all">Full Database</option>
+                        <option value="completed">Assessed</option>
+                        <option value="combined">Date View + Pendings</option>
+                    </select></div>
+                    <div class="filter-item" style="flex: 2;"><label>Global Search</label><input type="text" id="searchInput" placeholder="Search Job, Party, BL, LC..." onkeyup="applyFilters()"></div>
+                    <button class="btn btn-print" onclick="preparePrint()">Print Report</button>
+                </div>
+
+                <!-- Data Table with Field-wise Filter Row -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-sl">SL</th>
+                                <th>Type</th>
+                                <th>Job</th>
+                                <th>Importer / Exporter</th>
+                                <th>Description</th>
+                                <th>BL No</th>
+                                <th>LC No</th>
+                                <th>BoE No</th>
+                                <th>BoE Date</th>
+                                <th>Duty</th>
+                                <th>Status</th>
+                                <th>Remark</th>
+                                <th>Ass. Date</th>
+                                <th class="btn-col">Action</th>
+                            </tr>
+                            <!-- Individual Column Filter Header Row -->
+                            <tr class="th-filter no-print">
+                                <th></th>
+                                <th>
+                                    <select id="colFilter_type" onchange="applyFilters()">
+                                        <option value="">All</option>
+                                        <option value="IMPORT">IMPORT</option>
+                                        <option value="EXPORT">EXPORT</option>
+                                    </select>
+                                </th>
+                                <th><input type="text" id="colFilter_job" placeholder="Filter Job" onkeyup="applyFilters()"></th>
+                                <th><input type="text" id="colFilter_imp" placeholder="Filter Name" onkeyup="applyFilters()"></th>
+                                <th><input type="text" id="colFilter_desc" placeholder="Filter Desc" onkeyup="applyFilters()"></th>
+                                <th><input type="text" id="colFilter_bl" placeholder="Filter BL" onkeyup="applyFilters()"></th>
+                                <th><input type="text" id="colFilter_lc" placeholder="Filter LC" onkeyup="applyFilters()"></th>
+                                <th><input type="text" id="colFilter_boe_n" placeholder="Filter BoE" onkeyup="applyFilters()"></th>
+                                <th></th>
+                                <th><input type="text" id="colFilter_duty" placeholder="Filter Duty" onkeyup="applyFilters()"></th>
+                                <th>
+                                    <select id="colFilter_status" onchange="applyFilters()">
+                                        <option value="">All</option>
+                                        <option value="YELLOW">YELLOW</option>
+                                        <option value="RED">RED</option>
+                                    </select>
+                                </th>
+                                <th><input type="text" id="colFilter_rem" placeholder="Filter Remark" onkeyup="applyFilters()"></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
         </div>
     </div>
 </div>
@@ -358,12 +561,8 @@
     let currentUser = null;
     let editingUserId = null;
 
-    document.getElementById('loginUser').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') handleLogin();
-    });
-    document.getElementById('loginPass').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') handleLogin();
-    });
+    document.getElementById('loginUser').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleLogin(); });
+    document.getElementById('loginPass').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleLogin(); });
 
     function formatToDB(dateVal) {
         if (!dateVal) return null;
@@ -406,7 +605,6 @@
 
         if (found) {
             currentUser = found;
-            
             const nowIso = new Date().toLocaleString('en-GB');
             await _supabase.from('login_logs').insert([{ user_id: found.user_id, login_time: nowIso }]);
 
@@ -430,7 +628,7 @@
         document.getElementById('loginPass').value = '';
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('roleStatus').style.display = "none";
-        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'none', 'important'));
         document.getElementById('userModal').style.display = 'none';
     }
 
@@ -440,36 +638,31 @@
         statusEl.style.color = color;
         statusEl.style.display = "block";
         if(currentUser.role === 'admin') {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.setProperty('display', 'block', 'important'));
+            document.querySelectorAll('.admin-only').forEach(el => {
+                if(el.id === 'entryWrapper') {
+                    el.style.setProperty('display', 'flex', 'important');
+                } else {
+                    el.style.setProperty('display', 'block', 'important');
+                }
+            });
         }
     }
 
     function toggleUserModal(show) {
         if(currentUser && currentUser.role === 'admin') {
             document.getElementById('userModal').style.display = show ? 'flex' : 'none';
-            if(show) {
-                switchAuditTab('users');
-            }
+            if(show) switchAuditTab('users');
         }
     }
 
     function switchAuditTab(tab) {
         document.getElementById('sectionUsers').style.display = 'none';
         document.getElementById('sectionLogins').style.display = 'none';
-        document.getElementById('tabUsersBtn').style.background = '#ffffff';
-        document.getElementById('tabUsersBtn').style.color = 'var(--primary)';
-        document.getElementById('tabLoginsBtn').style.background = '#ffffff';
-        document.getElementById('tabLoginsBtn').style.color = 'var(--primary)';
-
         if(tab === 'users') {
             document.getElementById('sectionUsers').style.display = 'block';
-            document.getElementById('tabUsersBtn').style.background = 'var(--primary)';
-            document.getElementById('tabUsersBtn').style.color = '#ffffff';
             renderUserTable();
         } else if(tab === 'logins') {
             document.getElementById('sectionLogins').style.display = 'block';
-            document.getElementById('tabLoginsBtn').style.background = 'var(--primary)';
-            document.getElementById('tabLoginsBtn').style.color = '#ffffff';
             populateLoginUserDropdown();
             renderLoginLogsTable();
         }
@@ -519,24 +712,20 @@
     async function populateLoginUserDropdown() {
         await fetchUsers();
         const select = document.getElementById('loginUserFilter');
-        const currentVal = select.value;
         select.innerHTML = '<option value="">All Users</option>';
         systemUsers.forEach(u => {
             const opt = document.createElement('option');
-            opt.value = u.user_id;
-            opt.textContent = u.user_id;
+            opt.value = u.user_id; opt.textContent = u.user_id;
             select.appendChild(opt);
         });
-        select.value = currentVal;
     }
 
     async function renderLoginLogsTable() {
         const { data, error } = await _supabase.from('login_logs').select('*').order('id', { ascending: false }).limit(500);
         const tbody = document.getElementById('loginTableBody');
         tbody.innerHTML = '';
-        
         if(!error && data) {
-            const dateFilter = document.getElementById('loginDateFilter').value; // YYYY-MM-DD
+            const dateFilter = document.getElementById('loginDateFilter').value;
             const userFilter = document.getElementById('loginUserFilter').value.trim().toLowerCase();
 
             let filtered = data.filter(log => {
@@ -546,8 +735,7 @@
                     if (parts.length >= 3) {
                         let d = parts[0], m = parts[1], y = parts[2];
                         if (y.length === 2) y = '20' + y;
-                        const logDateStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-                        if (logDateStr !== dateFilter) return false;
+                        if (`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}` !== dateFilter) return false;
                     }
                 }
                 return true;
@@ -555,10 +743,7 @@
 
             filtered.forEach(log => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding:6px; font-size:0.7rem; font-weight:700; color:var(--primary);">${log.user_id}</td>
-                    <td style="padding:6px; font-size:0.7rem;">${log.login_time}</td>
-                `;
+                tr.innerHTML = `<td style="padding:6px; font-weight:700; color:var(--primary);">${log.user_id}</td><td style="padding:6px;">${log.login_time}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -575,83 +760,60 @@
         const upass = document.getElementById('new_upass').value.trim();
         const urole = document.getElementById('new_urole').value;
 
-        if(!uid || !upass) {
-            alert("User ID and Password are required!");
-            return;
-        }
+        if(!uid || !upass) { alert("User ID and Password required!"); return; }
 
         let error;
         if(editingUserId) {
             const res = await _supabase.from('users').update({ password: upass, role: urole }).eq('user_id', editingUserId);
             error = res.error;
         } else {
-            const exists = systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase());
-            if(exists) {
-                alert("User ID already exists! Use Edit instead.");
-                return;
+            if(systemUsers.find(u => u.user_id.toLowerCase() === uid.toLowerCase())) {
+                alert("User ID already exists!"); return;
             }
             const res = await _supabase.from('users').insert([{ user_id: uid, password: upass, role: urole }]);
             error = res.error;
         }
 
-        if(!error) {
-            cancelUserEdit();
-            renderUserTable();
-        } else {
-            alert("Error saving user. Make sure the 'users' table exists in Supabase. Details: " + error.message);
-        }
+        if(!error) { cancelUserEdit(); renderUserTable(); }
+        else { alert("Error saving user: " + error.message); }
     }
 
     async function deleteUser(uid) {
-        if(uid.toLowerCase() === 'admin') {
-            alert("Cannot delete the core admin account!");
-            return;
-        }
+        if(uid.toLowerCase() === 'admin') { alert("Cannot delete admin!"); return; }
         if(confirm(`Delete user "${uid}"?`)) {
             const { error } = await _supabase.from('users').delete().eq('user_id', uid);
             if(!error) renderUserTable();
         }
     }
 
-    function toggleEntry() {
-        const wrapper = document.getElementById('entryWrapper');
-        wrapper.style.display = (wrapper.style.display === "none" || wrapper.style.display === "") ? "block" : "none";
-    }
-
     async function fetchData() {
         let allData = [];
-        let from = 0;
-        let to = 999;
-        let hasMore = true;
+        let from = 0, to = 999, hasMore = true;
 
         while (hasMore) {
-            const { data, error } = await _supabase
-                .from('assessments')
-                .select('*')
-                .order('id', { ascending: true })
-                .range(from, to);
-
-            if (error) {
-                console.error("Fetch Error:", error);
-                break;
-            }
-
+            const { data, error } = await _supabase.from('assessments').select('*').order('id', { ascending: true }).range(from, to);
+            if (error) break;
             if (data && data.length > 0) {
                 allData = allData.concat(data);
-                if (data.length < 1000) {
-                    hasMore = false;
-                } else {
-                    from += 1000;
-                    to += 1000;
-                }
-            } else {
-                hasMore = false;
-            }
+                if (data.length < 1000) hasMore = false;
+                else { from += 1000; to += 1000; }
+            } else hasMore = false;
         }
 
         assessments = allData;
         updateSuggestions();
+        updateStats();
         applyFilters();
+    }
+
+    function updateStats() {
+        const pending = assessments.filter(i => !i.ass_date || i.ass_date === "-" || i.ass_date.trim() === "").length;
+        const completed = assessments.length - pending;
+        const red = assessments.filter(i => i.ry_status === "RED").length;
+
+        document.getElementById('stat_pending').innerText = pending;
+        document.getElementById('stat_completed').innerText = completed;
+        document.getElementById('stat_red').innerText = red;
     }
 
     function applyFilters() {
@@ -662,12 +824,25 @@
         const mode = document.getElementById('viewMode').value;
         const searchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
 
-        let fromDate = null;
-        if(fromInput) { fromDate = new Date(fromInput); fromDate.setHours(0,0,0,0); }
-        let toDate = null;
-        if(toInput) { toDate = new Date(toInput); toDate.setHours(23,59,59,999); }
+        // Field Specific Filters
+        const fType = document.getElementById('colFilter_type').value;
+        const fJob = document.getElementById('colFilter_job').value.toLowerCase().trim();
+        const fImp = document.getElementById('colFilter_imp').value.toLowerCase().trim();
+        const fDesc = document.getElementById('colFilter_desc').value.toLowerCase().trim();
+        const fBl = document.getElementById('colFilter_bl').value.toLowerCase().trim();
+        const fLc = document.getElementById('colFilter_lc').value.toLowerCase().trim();
+        const fBoeN = document.getElementById('colFilter_boe_n').value.toLowerCase().trim();
+        const fDuty = document.getElementById('colFilter_duty').value.toLowerCase().trim();
+        const fStatus = document.getElementById('colFilter_status').value;
+        const fRem = document.getElementById('colFilter_rem').value.toLowerCase().trim();
+
+        let fromDate = fromInput ? new Date(fromInput) : null;
+        if(fromDate) fromDate.setHours(0,0,0,0);
+        let toDate = toInput ? new Date(toInput) : null;
+        if(toDate) toDate.setHours(23,59,59,999);
 
         let filtered = assessments.filter(item => {
+            // General Keyword Search
             const matchesSearch = !searchKeyword || Object.values(item).some(v => String(v).toLowerCase().includes(searchKeyword));
             const matchesBoE = !boeInput || (item.boe_date === boeFormatted);
             const itemAssDate = parseDateStr(item.ass_date);
@@ -682,10 +857,26 @@
                 }
             }
 
-            if (mode === 'completed') return matchesSearch && matchesBoE && inRange && !isPending;
-            if (mode === 'pending') return matchesSearch && matchesBoE && isPending;
-            if (mode === 'combined') return matchesSearch && (inRange || isPending);
-            return matchesSearch && matchesBoE && inRange;
+            let matchesView = true;
+            if (mode === 'completed') matchesView = inRange && !isPending;
+            else if (mode === 'pending') matchesView = isPending;
+            else if (mode === 'combined') matchesView = (inRange || isPending);
+            else matchesView = inRange;
+
+            // Column Specific Filters Checks
+            const itemType = (item.record_type || 'IMPORT').toUpperCase();
+            if (fType && itemType !== fType) return false;
+            if (fJob && !String(item.job || '').toLowerCase().includes(fJob)) return false;
+            if (fImp && !String(item.importer || '').toLowerCase().includes(fImp)) return false;
+            if (fDesc && !String(item.description || '').toLowerCase().includes(fDesc)) return false;
+            if (fBl && !String(item.bl_no || '').toLowerCase().includes(fBl)) return false;
+            if (fLc && !String(item.lc_no || '').toLowerCase().includes(fLc)) return false;
+            if (fBoeN && !String(item.boe_no || '').toLowerCase().includes(fBoeN)) return false;
+            if (fDuty && !String(item.duty || '').toLowerCase().includes(fDuty)) return false;
+            if (fStatus && String(item.ry_status || '') !== fStatus) return false;
+            if (fRem && !String(item.remark || '').toLowerCase().includes(fRem)) return false;
+
+            return matchesSearch && matchesBoE && matchesView;
         });
 
         filtered.sort((a, b) => {
@@ -705,10 +896,17 @@
             const tr = document.createElement('tr');
             const isAdmin = currentUser && currentUser.role === 'admin';
             const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'staff');
-            
+            const recType = item.record_type || 'IMPORT';
+
             if (editId === item.id) {
                 tr.innerHTML = `
                     <td>${index+1}</td>
+                    <td>
+                        <select id="e_type" ${isAdmin ? '' : 'disabled'}>
+                            <option value="IMPORT" ${recType==='IMPORT'?'selected':''}>IMPORT</option>
+                            <option value="EXPORT" ${recType==='EXPORT'?'selected':''}>EXPORT</option>
+                        </select>
+                    </td>
                     <td><input value="${item.job || ''}" id="e_job" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input value="${item.importer || ''}" id="e_imp" ${isAdmin ? '' : 'disabled'}></td>
                     <td><input value="${item.description || ''}" id="e_desc" ${isAdmin ? '' : 'disabled'}></td>
@@ -721,26 +919,27 @@
                     <td><input value="${item.remark || ''}" id="e_rem"></td>
                     <td><input type="date" value="${formatToInput(item.ass_date)}" id="e_ass" ${isAdmin ? '' : 'disabled'} onclick="this.showPicker && this.showPicker()"></td>
                     <td class="btn-col">
-                        <button class="btn btn-add" onclick="saveEdit(${item.id})">Save</button>
-                        <button class="btn" style="background:#cbd5e1; color:#0f172a; margin-top:2px;" onclick="cancelEdit()">Cancel</button>
-                    `;
+                        <button class="btn btn-add" onclick="saveEdit(${item.id})" style="padding:4px 8px;">Save</button>
+                        <button class="btn" style="background:#cbd5e1; color:#0f172a; padding:4px 8px; margin-top:2px;" onclick="cancelEdit()">Cancel</button>
+                    </td>`;
             } else {
                 tr.innerHTML = `
                     <td>${index+1}</td>
-                    <td>${item.job || ''}</td>
+                    <td><span class="tag ${recType==='EXPORT'?'tag-export':'tag-import'}">${recType}</span></td>
+                    <td><b>${item.job || ''}</b></td>
                     <td>${item.importer || ''}</td>
                     <td>${item.description || ''}</td>
                     <td>${item.bl_no || ''}</td>
                     <td>${item.lc_no || ''}</td>
                     <td>${item.boe_no || ''}</td>
-                    <td style="font-weight:700">${item.boe_date || ''}</td>
-                    <td style="font-weight:600; color:#1e3a8a">${item.duty || ''}</td>
+                    <td style="font-weight:600">${item.boe_date || ''}</td>
+                    <td style="font-weight:700; color:#1e3a8a">${item.duty || ''}</td>
                     <td><span class="tag ${item.ry_status}">${item.ry_status}</span></td>
                     <td style="color:#1d4ed8; font-weight:600">${item.remark || ''}</td>
                     <td style="font-weight:700">${item.ass_date || '-'}</td>
                     <td class="btn-col">
                         ${canEdit ? `<button class="btn btn-edit" onclick="startEdit(${item.id})">Edit</button>` : ''}
-                        ${isAdmin ? `<button class="btn" style="color:#b91c1c; background:none" onclick="deleteRecord(${item.id})">X</button>` : ''}
+                        ${isAdmin ? `<button class="btn" style="color:#b91c1c; background:none; padding:2px 6px;" onclick="deleteRecord(${item.id})">X</button>` : ''}
                     </td>`;
             }
             tbody.appendChild(tr);
@@ -753,13 +952,13 @@
         const jobNo = document.getElementById('job_in').value.trim();
         if(!jobNo) { alert("Job Number is required"); return; }
 
-        const isDuplicate = assessments.some(item => item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase());
-        if(isDuplicate) {
+        if(assessments.some(item => item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase())) {
             alert(`Error: Job Number "${jobNo}" already exists in the database.`);
             return;
         }
 
         const entry = {
+            record_type: document.getElementById('record_type_in').value,
             job: jobNo, 
             importer: document.getElementById('imp_in').value,
             description: document.getElementById('desc_in').value, 
@@ -790,16 +989,13 @@
 
         if (isAdmin) {
             const jobNo = document.getElementById('e_job').value.trim();
-            
-            const isDuplicate = assessments.some(item => 
-                item.id !== id && item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase()
-            );
-            if(isDuplicate) {
+            if(assessments.some(item => item.id !== id && item.job && item.job.toString().toLowerCase() === jobNo.toLowerCase())) {
                 alert(`Error: Job Number "${jobNo}" is already used by another record.`);
                 return;
             }
 
             updated = {
+                record_type: document.getElementById('e_type').value,
                 job: jobNo, 
                 importer: document.getElementById('e_imp').value,
                 description: document.getElementById('e_desc').value, 
@@ -813,10 +1009,9 @@
                 ass_date: formatToDB(document.getElementById('e_ass').value) || null
             };
         } else if (currentUser && currentUser.role === 'staff') {
-            updated = { 
-                remark: document.getElementById('e_rem').value
-            };
+            updated = { remark: document.getElementById('e_rem').value };
         }
+        
         const { error } = await _supabase.from('assessments').update(updated).eq('id', id);
         if (!error) {
             editId = null; 
@@ -827,13 +1022,10 @@
     }
 
     async function deleteRecord(id) { 
-        if(currentUser && currentUser.role === 'admin' && confirm("Delete?")) { 
+        if(currentUser && currentUser.role === 'admin' && confirm("Delete record?")) { 
             const { error } = await _supabase.from('assessments').delete().eq('id', id); 
-            if(!error) {
-                fetchData(); 
-            } else {
-                alert("Error deleting record: " + error.message);
-            }
+            if(!error) fetchData(); 
+            else alert("Error deleting record: " + error.message);
         } 
     }
     
@@ -842,7 +1034,9 @@
         window.print(); 
     }
 
-    function clearInputs() { document.querySelectorAll('.entry-grid input').forEach(i => i.value = ''); }
+    function clearInputs() { 
+        document.querySelectorAll('#entryWrapper input:not([type="button"])').forEach(i => i.value = ''); 
+    }
     
     function updateSuggestions() {
         const imps = [...new Set(assessments.map(i => i.importer).filter(Boolean))];
